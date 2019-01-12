@@ -52,7 +52,7 @@ source env/bin/activate
 
 and your virtual envioronment will be activated. Here you can install packages that will not interfere with any other programs.
 
-Run 'requirements.txt' to install all necessary packages via pip. (This script, at the moment, installs ipython; I enjoy using ipython while working out code)
+Run 'requirements.txt' to install all necessary packages via pip. 
 
 ```
 pip install -r requirements.txt
