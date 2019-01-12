@@ -11,11 +11,11 @@ import random
 import math
 import time
 
-##for the models
-#import keras
-#from keras.models import Sequential
-#from keras.utils import np_utils
-#from keras.layers import Dense, Conv2D, Flatten, LSTM, MaxPooling2D, Dropout, TimeDistributed
+#for the models
+import keras
+from keras.models import Sequential
+from keras.utils import np_utils
+from keras.layers import Dense, Conv2D, Flatten, LSTM, MaxPooling2D, Dropout, TimeDistributed
 
 from errors import TotalSamplesNotAlignedSpeakerSamples
 
@@ -453,6 +453,56 @@ if __name__=="__main__":
     print()
     print(y_train[:100])
     
-    end = time.time()
     
-    print("Total duration: {} sec.".format(round(end-start,3)))
+    #train the models!
+    
+    try:
+        
+        #TIME-FREQUENCY CONVNET
+        tfcnn = Sequential()
+        # feature maps = 40
+        # 8x4 time-frequency filter (goes along both time and frequency axes)
+        num_features = 40
+        color_scale = 1
+        input_size = (frame_width,num_features,color_scale)
+        tfcnn.add(Conv2D(40, kernel_size=(8,4), activation='relu'))
+        #non-overlapping pool_size 3x3
+        tfcnn.add(MaxPooling2D(pool_size=(3,3)))
+        tfcnn.add(Dropout(0.25))
+        tfcnn.add(Flatten())
+        
+        #prepare LSTM
+        tfcnn_lstm = Sequential()
+        timestep = samples_per_speaker_zero_padded//frame_width
+        tfcnn_lstm.add(TimeDistributed(tfcnn,input_shape=(timestep,frame_width,num_features,color_scale)))
+        tfcnn_lstm.add(LSTM(timestep)) #num timesteps
+        tfcnn_lstm.add(Dense(1,activation="sigmoid"))
+        
+        
+        print(tfcnn_lstm.summary())
+        
+        
+        #compile model
+        tfcnn_lstm.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
+        #train model
+        tfcnn_lstm.fit(X_train, y_train, validation_data=(X_val,y_val),epochs=100)
+        
+        #predict test data
+        pred = tfcnn_lstm.predict(X_test)
+        pred = pred >0.5
+        pred = pred.astype(float)
+        
+        #see how many were correct
+        correct = 0
+        for i, item in enumerate(y_test):
+            if item == pred[i]:
+                correct += 1
+        score = round(correct/float(len(y_test)) * 100, 2)
+        print("\n\nmodel earned a score of {}%  for the test data.\n\n".format(score))
+        
+    except Exception as e:
+        print(e)
+        
+    finally:
+        end = time.time()
+        print("Total duration: {} sec.".format(round(end-start,3)))
