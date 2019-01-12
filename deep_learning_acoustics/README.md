@@ -167,8 +167,15 @@ Finally, to extract the MFCC features with varying amounts of noise combined, ru
 python3 speech_prep.py
 ```
 
-## To Come:
+## Train the ConvNet+LSTM
 
-* Prepping the data for deep neural networks
+To get the data split into the train, validation, and test datasets, to zero-pad them, and get them in the right dimensions, oh and of course to train and test a male-female speech classifer, run the following:
+
+```
+python3 train_models.py
+```
+To run through 100 epochs, it should only take around 5 minutes on a CPU.
+
+## To Come:
 
 * Saving the trained models and deploying them
