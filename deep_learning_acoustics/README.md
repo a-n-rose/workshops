@@ -115,8 +115,8 @@ I've posted some screenshots to help you navigate the webpage.
 
 5) Rename the extracted file "export" as "male_speech"
 
-![Imgur](https://i.imgur.com/EY1j8M2.png)
-#### This is just to show how the export file should be renamed to "male_speech" and "female_speech"
+![Imgur](https://i.imgur.com/SHhfjxM.png)
+##### This is just to show how the export file should be renamed to "male_speech" and "female_speech"
 
 6) On the database website: click on "Zurück" and "Neue Anfrage"
 
