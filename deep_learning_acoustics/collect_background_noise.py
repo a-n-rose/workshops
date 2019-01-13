@@ -16,10 +16,6 @@ def record_background_noise(sec):
 
 if __name__=="__main__":
     
-    #conn = sqlite3.connect("male_female_speech.db")
-    #c = conn.cursor()
-    
-    #record background noise? w computer?
     print("Are you ready to record background noise? (Y/N): ")
     ready = input()
     
