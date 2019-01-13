@@ -55,15 +55,17 @@ def scale_noise(np_array,factor):
     '''
     return(np_array*factor)
 
-def load_speech_add_noise(wavefile,noise_samples):
+def load_speech_add_noise(wavefile,noise_samples=None):
     y, sr = librosa.load(wavefile, sr=16000, res_type= 'kaiser_fast')
     # opportunity to improve data for DL training:
     # some data has a lot of silence at beginning and ending of recordings
     # can apply a voice activity detection (VAD) function to only extract features where speech is present --> reduces amount of redundant training data
     
-    
-    #apply noise at various levels
-    rand_scale = random.choice([0.0,0.25,0.5,0.75,1.0])
+    if noise_samples is None:
+        rand_scale = 0.0
+    else:
+        #apply noise at various levels
+        rand_scale = random.choice([0.0,0.25,0.5,0.75,1.0])
     
     if rand_scale:
         
@@ -89,7 +91,7 @@ def load_speech_add_noise(wavefile,noise_samples):
     return mfccs
 
 
-def collect_features(dict_speech_features, filename, group, noise_samples):
+def collect_features(dict_speech_features, filename, group, noise_samples=None):
     print("now processing {} speech.".format(group))
     wavefiles = collect_filenames(filename)
     for wav in wavefiles:
@@ -161,11 +163,17 @@ if __name__=="__main__":
     conn = None
     start = time.time()
     
-    #enter your newly created noise wavefile path
-    noise_path = "./data/background_noise.wav"
-    
-    noise_samples, sr = librosa.load(noise_path, sr=16000, res_type= 'kaiser_fast')
-    
+    #need relevant infos:
+    database = "male_female_speech_svd.db"
+    noise = None
+    if noise is not None:
+        #enter your newly created noise wavefile path - if "no noise" then this will be ignored
+        noise_path = "./data/background_noise.wav"
+        
+        noise_samples, sr = librosa.load(noise_path, sr=16000, res_type= 'kaiser_fast')
+    else:
+        noise_samples = None
+        
     #initialize the dictionary that will collect the speech features according to speaker id
     # perk about dictionaries?
     # they don't let you enter in more than one kind of key --> you will get a key error 
@@ -179,9 +187,6 @@ if __name__=="__main__":
         data_prepped_4_SQL = dataprep_SQL(dict_speech_features)
         
         #insert data to SQL table
-        #need relevant infos:
-        database = "male_female_speech_svd.db"
-        table_name = "mfcc"
         save_data_sql(data_prepped_4_SQL, database, table_name)
         
     except KeyError as e:

@@ -346,7 +346,13 @@ if __name__=="__main__":
     start = time.time()
     
     database = "male_female_speech_svd.db"
-    table_name = "mfcc"
+    noise = None
+    if noise is None:
+        table_name = "mfcc_no_noise"
+    elif noise == "low":
+        table_name = "mfcc_low_noise"
+    elif noise == "high":
+        table_name = "mfcc_high_noise"
     context_window_size = 9 # 9*2+1 = 19 total frame width
     frame_width = context_window_size*2+1
     
@@ -513,7 +519,7 @@ if __name__=="__main__":
         score = round(correct/float(len(y_test)) * 100, 2)
         print("\n\nmodel earned a score of {}%  for the test data.\n\n".format(score))
         
-        modelname = "female_male_speech_classifier_CNNLSTM_backgroundnoise_high_{}acc_samps_{}".format(int(score),samples_per_speaker_zero_padded)
+        modelname = "female_male_speech_classifier_CNNLSTM_backgroundnoise_{}_{}acc_samps_{}".format(noise,int(score),samples_per_speaker_zero_padded)
         print('Saving Model')
         tfcnn_lstm.save(modelname+'.h5')
         print('Done!')

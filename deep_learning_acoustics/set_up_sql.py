@@ -9,7 +9,13 @@ import sqlite3
 
 
 #create table to save speech features
-def create_sql_table(num_mfcc,table_name):
+def create_sql_table(num_mfcc,noise=None):
+    if noise is None:
+        table_name = "mfcc_no_noise"
+    elif noise = "low":
+        table_name = "mfcc_low_noise"
+    elif noise = "high":
+        table_name = "mfcc_high_noise"
     #40 numbers are a lot to write out! 
     #instead of writing 0 REAL,1 REAL,2 REAL,3 REAL,4 REAL,5 REAL... blah blah:
     cols = []
@@ -27,13 +33,12 @@ if __name__ == "__main__":
     try:
         #name our database
         database = "male_female_speech_svd.db"
-        table_name = "mfcc"
         num_mfcc = 40
 
         conn = sqlite3.connect(database)
         c = conn.cursor()
         
-        create_sql_table(num_mfcc, table_name)
+        create_sql_table(num_mfcc)
         
         print("Successfully created the database and table.")
     except Error as e:
