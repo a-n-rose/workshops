@@ -55,7 +55,17 @@ def balance_data(data):
     
     data = data.drop(columns="selected")
     
-    return data
+    return data, ids_f, ids_m
+
+def get_mf_ratio(ids,ids_1,ids_2):
+    count1 = 0
+    count2 = 0
+    for speaker in ids:
+        if speaker in ids_1:
+            count1+=1
+        elif speaker in ids_2:
+            count2+=1
+    return count1, count2
 
 def get_speaker_ids(data):
     cols = data.columns
@@ -356,7 +366,7 @@ if __name__=="__main__":
     print(data.shape)
     
     # even out data representation
-    data = balance_data(data)
+    data, ids_f, ids_m = balance_data(data)
     print("balanced data")
     print(data.shape)
     
@@ -453,6 +463,17 @@ if __name__=="__main__":
     print()
     print(y_train[:100])
     
+    #see how balanced each data set is:
+    
+
+    
+    ids_f_train, ids_m_train = get_mf_ratio(ids_train, ids_f, ids_m)
+    ids_f_val, ids_m_val = get_mf_ratio(ids_val, ids_f, ids_m)
+    ids_f_test, ids_m_test = get_mf_ratio(ids_test, ids_f, ids_m)
+    
+    print("\n{}Data:\n\nNumber of female speakers = {}\nNumber of male speakers = {}\n".format("Training",ids_f_train,ids_m_train))
+    print("\n{}Data:\n\nNumber of female speakers = {}\nNumber of male speakers = {}\n".format("Validation",ids_f_val,ids_m_val))
+    print("\n{}Data:\n\nNumber of female speakers = {}\nNumber of male speakers = {}\n".format("Test",ids_f_test,ids_m_test))
     
     #train the models!
     
@@ -499,6 +520,14 @@ if __name__=="__main__":
                 correct += 1
         score = round(correct/float(len(y_test)) * 100, 2)
         print("\n\nmodel earned a score of {}%  for the test data.\n\n".format(score))
+        
+        modelname = "female_male_speech_classifier_CNNLSTM_backgroundnoise_{}acc".format(int(score))
+        print('Saving Model')
+        model_json = tfcnn_lstm.to_json()
+        with open(modelname+'.json','w') as json_file:
+            json_file.write(model_json)
+        tfcnn_lstm.save_weights(modelname+'.h5')
+        print('Done!')
         
     except Exception as e:
         print(e)
