@@ -400,11 +400,6 @@ if __name__=="__main__":
     train_zeropadded =  zero_pad_data(train,ids_train,context_window_size, max_samples)
     val_zeropadded =  zero_pad_data(val,ids_val,context_window_size, max_samples)
     test_zeropadded =  zero_pad_data(test,ids_test,context_window_size, max_samples)
-    
-    print(train_zeropadded[:200])
-    print()
-    print(train_zeropadded[-200:])
-    print()
 
     
     '''
@@ -458,10 +453,7 @@ if __name__=="__main__":
     X_val, y_val = shape_data_dimensions_ConvNet_LSTM(val_zeropadded,samples_per_speaker_zero_padded, context_window_size=context_window_size)
     
     X_test, y_test = shape_data_dimensions_ConvNet_LSTM(test_zeropadded,samples_per_speaker_zero_padded, context_window_size=context_window_size)
-    
-    print(X_train[:100])
-    print()
-    print(y_train[:100])
+
     
     #see how balanced each data set is:
     
@@ -521,13 +513,11 @@ if __name__=="__main__":
         score = round(correct/float(len(y_test)) * 100, 2)
         print("\n\nmodel earned a score of {}%  for the test data.\n\n".format(score))
         
-        modelname = "female_male_speech_classifier_CNNLSTM_backgroundnoise_{}acc".format(int(score))
+        modelname = "female_male_speech_classifier_CNNLSTM_backgroundnoise_high_{}acc_samps_{}".format(int(score),samples_per_speaker_zero_padded)
         print('Saving Model')
-        model_json = tfcnn_lstm.to_json()
-        with open(modelname+'.json','w') as json_file:
-            json_file.write(model_json)
-        tfcnn_lstm.save_weights(modelname+'.h5')
+        tfcnn_lstm.save(modelname+'.h5')
         print('Done!')
+        print("\n\nModel saved as:\n{}".format(modelname))
         
     except Exception as e:
         print(e)
