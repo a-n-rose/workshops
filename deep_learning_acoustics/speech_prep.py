@@ -81,6 +81,11 @@ def load_speech_add_noise(wavefile,noise_samples):
         
     mfccs = librosa.feature.mfcc(y, sr, n_mfcc=40,hop_length=int(0.010*sr),n_fft=int(0.025*sr))
     
+    #rows = 40
+    #columns = time
+    #want these to be switched:
+    mfccs = np.transpose(mfccs)
+    
     return mfccs
 
 
@@ -90,11 +95,6 @@ def collect_features(dict_speech_features, filename, group, noise_samples):
     for wav in wavefiles:
         sp_id = get_speaker_id(wav)
         mfcc = load_speech_add_noise(wav,noise_samples)
-        
-        #rows = 40
-        #columns = time
-        #want these to be switched:
-        mfcc = np.transpose(mfcc)
         
         if group == "female":
             sex = 0
