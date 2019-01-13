@@ -485,7 +485,7 @@ if __name__=="__main__":
         #compile model
         tfcnn_lstm.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
         #train model
-        tfcnn_lstm.fit(X_train, y_train, validation_data=(X_val,y_val),epochs=100)
+        tfcnn_lstm.fit(X_train, y_train, validation_data=(X_val,y_val),epochs=60)
         
         #predict test data
         pred = tfcnn_lstm.predict(X_test)
@@ -505,4 +505,4 @@ if __name__=="__main__":
         
     finally:
         end = time.time()
-        print("Total duration: {} sec.".format(round(end-start,3)))
+        print("Total duration: {} minutes.".format(round((end-start)/60,3)))
