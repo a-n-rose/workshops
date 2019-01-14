@@ -21,11 +21,11 @@ By the end of this workshop, participants should know how to:
 
 The task for the workshop sounds simple: to train a neural network to identify male or female speech, but it is quite a task to take on, in one evening, the preparation of sound data for deep learning, to train the models, and then to deploy them. We will get as far as we can! All while learning little tricks in Python to help in any project you develop. 
  
-## Editors/ Virtual Environment
+## Virtual Environment
 
 I suggest using a virtual environemt. This allows you to use any package versions without them interfering with other programs on your system. 
 
-You can set up a virtual environment different ways. Two (of many) options I will describe below:
+You can set up a virtual environment different ways. One way is with Python3.6-venv.
 
 ### Python3.6-venv
 
@@ -36,7 +36,7 @@ To install, enter into the command line:
 sudo apt install python3.6-venv
 ```
 
-In folder of cloned directory, write in commandline:
+In folder of cloned directory (i.e. "deep_learning_acoustics"), write in the command-line:
 
 ```
 python3 -m venv env
@@ -44,7 +44,7 @@ python3 -m venv env
 
 This will create a folder 'env'.
 
-Then type into the commandline:
+Then type into the command-line:
 
 ```
 source env/bin/activate
@@ -52,11 +52,12 @@ source env/bin/activate
 
 and your virtual envioronment will be activated. Here you can install packages that will not interfere with any other programs.
 
-Run 'requirements.txt' to install all necessary packages via pip. 
+To deactivate this environment, simply type in the command line:
 
 ```
-pip install -r requirements.txt
+deactivate
 ```
+
 
 ### PyCharm
 
@@ -82,15 +83,27 @@ pycharm-community
 
 Python 3.6
 
-I will be using Python 3.6.7. To check your version type the following into the commandline (Linux):
+To check your version type the following into the command-line (Linux):
 
 ```
 python3 --version
 ```
 
+Start up your virtual environment (in the folder "deep_learning_acoustics"):
+
+```
+source env/bin/activate
+```
+
+In your virtual environment, run 'requirements.txt' to install all necessary packages via pip. 
+
+```
+pip install -r requirements.txt
+```
+
 ## Download the Data
 
-Please download two sets of data *before* coming to the workshop. The database may limit the number of requests for data, so there is a risk that you won't be able to download it the evening of. 
+Please download the female and male speech data *before* coming to the workshop. The database may limit the number of requests for download, so there is a risk that you won't be able to download it the evening of (although I doubt it).
 
 Request the data from here: 
 
@@ -98,7 +111,11 @@ Request the data from here:
 
 ### Male Speech Data:
 
-I've posted some screenshots to help you navigate the webpage.
+I've posted some screenshots to help you navigate the webpage. We will first download healthy male speech, then healthy female speech. The webpage is in German, so real quick: 
+
+healthy = gesund
+male = männlich
+female = weiblich
 
 
 1) Check the boxes for "männlich" and "gesund"
