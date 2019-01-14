@@ -25,7 +25,7 @@ For full-participation in the workshop, the following is needed:
 
 The workshop can be useful even to those who don't fully participate. For example, part of the workshop focuses on implementing useful Python code in functions, independent of the entire proect. So come anyways and don't worry about it! 
 
-I look forward to this workshop and if you have any questions or suggestions, feel free to contact me!
+I look forward to this workshop and if you have any questions or suggestions, feel free to contact me.
 
 Best,
 Aislyn 
@@ -36,5 +36,5 @@ email: rose.aislyn.noelle@gmail.com
 
 github: <a href="https://github.com/a-n-rose">a-n-rose</a>
 
-blog: <a href="https://a-n-rose.github.io/blog/"Aislyn's Blog</a>
+blog: <a href="https://a-n-rose.github.io/blog/">Aislyn's Blog</a>
 
