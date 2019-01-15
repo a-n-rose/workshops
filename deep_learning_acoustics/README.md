@@ -81,7 +81,11 @@ pycharm-community
  
 ## Prerequisites
 
-Python 3.6
+1) Computer with CPU or GPU and sound recording capabilities, ideally via headset
+
+2) A way to examine SQL tables (I use <a href="https://sqlitebrowser.org/">DB Browser for SQLite</a>)
+
+3) Python 3.6
 
 To check your version type the following into the command-line (Linux):
 
@@ -89,13 +93,13 @@ To check your version type the following into the command-line (Linux):
 python3 --version
 ```
 
-Start up your virtual environment (in the folder "deep_learning_acoustics"):
+To install all the python packages we will use, first start up your virtual environment (in the folder "deep_learning_acoustics"):
 
 ```
 source env/bin/activate
 ```
 
-In your virtual environment, run 'requirements.txt' to install all necessary packages via pip. 
+4) In your virtual environment, run 'requirements.txt' to install all necessary packages via pip. 
 
 ```
 pip install -r requirements.txt
