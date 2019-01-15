@@ -68,9 +68,10 @@ def get_age(username):
 def set_up_sql_table(database, tablename, variable_list):
     '''
     variable list: list of pairs indicating column name and data type
-    id, INTEGER PRIMARY KEY
-    username, TEXT 
-    speaker_age, INT
+    For example:
+    [(id, INTEGER PRIMARY KEY),
+    (username, TEXT), 
+    (speaker_age, INT)]
     '''
     import sqlite3
     from sqlite3 import Error
