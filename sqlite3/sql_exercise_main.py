@@ -7,7 +7,7 @@ To see how the script *should* run, import these functions from:
 sql_exercise_functions  instead of sql_exercise_broken_functions
 
 '''
-from sql_exercise_functions import ExitApp, start_section, get_username, get_age, set_up_sql_table, insert_data_sql
+from sql_exercise_broken_functions import ExitApp, start_section, get_username, get_age, set_up_sql_table, insert_data_sql
 
 
 if __name__=="__main__":
