@@ -7,7 +7,7 @@ To see how the script *should* run, import these functions from:
 sql_exercise_functions  instead of sql_exercise_broken_functions
 
 '''
-from sql_exercise_broken_functions import ExitApp, start_section, get_username, get_age, set_up_sql_table, insert_data_sql
+from sql_exercise_functions import ExitApp, start_section, get_username, get_age, set_up_sql_table, insert_data_sql
 
 
 if __name__=="__main__":
@@ -34,7 +34,7 @@ if __name__=="__main__":
         if num_fake_users.isdigit():
             for i in range(int(num_fake_users)):
                 username = get_username()
-                if username = None:
+                if username == None:
                     raise ExitApp()
                 age = get_age(username)
                 fake_users.append((username,age))
