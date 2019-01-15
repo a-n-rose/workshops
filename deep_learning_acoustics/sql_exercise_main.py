@@ -17,7 +17,7 @@ if __name__=="__main__":
         print("\nSQLite3 Exercise\n")
         start = start_section()
         if start == False:
-            raise ExitApp("\nHave a good day!\n")    
+            raise ExitApp()    
 
         database = "test.db"
         tablename = "test"
@@ -34,6 +34,8 @@ if __name__=="__main__":
         if num_fake_users.isdigit():
             for i in range(int(num_fake_users)):
                 username = get_username()
+                if username = None:
+                    raise ExitApp()
                 age = get_age(username)
                 fake_users.append((username,age))
         

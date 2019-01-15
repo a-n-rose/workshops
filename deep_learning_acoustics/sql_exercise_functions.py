@@ -30,6 +30,8 @@ def get_username():
     correct = input()
     if "y" in correct.lower():
         pass
+    elif "exit" in correct.lower():
+        username = None
     else:
         username = get_username()
     return username

@@ -2,20 +2,27 @@
 
 Replace the #######s in the code with the following:
 
-Use 4 times:
+Use 3 times:
 input()
+
+Use 2 times:
+lower
 
 
 Use 1 time each:
-lower
-format
-isdigit
+conn.close
+conn.commit
 connect
 enumerate
-conn.commit
-executemany
 execute
-conn.close
+executemany
+finally
+format
+isdigit
+
+
+
+If you have trouble, keep in mind these functions/modules are likely used elsewhere in the script. Also, to learn more about any of these, Google's there to help! :P
 
 '''
 
@@ -25,7 +32,9 @@ class Error(Exception):
     pass
 
 class ExitApp(Error):
-    pass
+    """If someone enters 'exit' as input, they exit the app"""
+    print("\nHave a good day!\n")
+    return None
 
 
 
@@ -41,7 +50,7 @@ def start_section():
 # Collect User Information and working with STRINGS
 def get_username():
     print("\nEnter username: ")
-    username = #####
+    username = input()
     print("\nYou have entered {}".format(username))
     print("\nIs this correct? (Y/N)")
     
@@ -49,6 +58,8 @@ def get_username():
     correct = #####
     if "y" in correct.#####():
         pass
+    elif "exit" in correct.#####():
+        username = None
     else:
         username = get_username()
     return username
@@ -96,7 +107,7 @@ def set_up_sql_table(database, tablename, variable_list):
     except Error as e:
         print("\nDatabase error: {}\n".format(e))
     
-    finally:
+    ######:
         if conn:
             conn.close()
     
@@ -136,7 +147,3 @@ def insert_data_sql(database, tablename, data):
             #########()
         
     return None
-
-
-
-    
