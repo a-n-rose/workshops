@@ -1,6 +1,6 @@
 ## Simple SQLite3 Exercise
 
-These scripts serve as an exercise to get familiar with debugging, SQLite3, some builtin Python modules, and general function architecture, for example, error handling.
+These scripts serve as an exercise to get familiar with debugging, SQLite3, some built-in Python modules, and general function architecture, for example, error handling.
 
 ## Set Up
 

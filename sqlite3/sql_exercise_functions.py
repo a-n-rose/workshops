@@ -62,11 +62,17 @@ def set_up_sql_table(database, tablename, variable_list):
     
         variable_string = ""
         for i, pair in enumerate(variable_list):
+            
+            # a comma cannot be at the end of the string 
+            # due to SQL syntax. This checks to make sure 
+            # the item is not the last on in the list. 
+            # If it is, no comma is added.
             if i < len(variable_list)-1:
                 variable_string+=pair[0]+" "+pair[1]+", "
             else:
                 variable_string+=pair[0]+" "+pair[1]
         
+        # %s and %d are placeholders to enter strings and digits into a string
         msg = ''' CREATE TABLE IF NOT EXISTS %s( %s ) ''' % (tablename, variable_string)
         c.execute(msg)
         conn.commit()
