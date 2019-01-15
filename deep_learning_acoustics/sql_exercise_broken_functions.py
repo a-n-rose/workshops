@@ -1,5 +1,4 @@
 '''
-Try to get this script to run. It should allow you to create a database and enter new users and their ages.
 
 Replace the #######s in the code with the following:
 
@@ -7,7 +6,7 @@ Use 4 times:
 input()
 
 
-Use 1 time:
+Use 1 time each:
 lower
 format
 isdigit

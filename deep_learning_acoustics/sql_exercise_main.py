@@ -1,8 +1,10 @@
 '''
 Try to get this script to run. It should allow you to create a database and enter new users and their ages.
 
-Replace the #######s in the code with the following:
+Fix the code in the imported functions (open the file sql_exercise_broken_functions.py)
 
+To see how the script *should* run, import these functions from:
+sql_exercise_functions  instead of sql_exercise_broken_functions
 
 '''
 from sql_exercise_broken_functions import ExitApp, start_section, get_username, get_age, set_up_sql_table, insert_data_sql
