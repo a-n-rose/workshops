@@ -195,8 +195,15 @@ To get the data split into the train, validation, and test datasets, to zero-pad
 ```
 python3 train_models.py
 ```
-To run through 100 epochs, it should only take around 5 minutes on a CPU.
+To run through 100 epochs, it should only take around 5 minutes on a CPU. Once the model is finished traing, it saves the architecture and the weights in a h5 file.
 
-## To Come:
+## Classify new data with the trained model
 
-* Saving the trained models and deploying them
+To see how well the classifier handles new data, run the following script:
+
+```
+python3 implement_model.py
+```
+
+This will ask the user/s to record themselves saying "Hallo, wie geht es Ihnen". The users can try saying anything, but since the classifier was trained with speakers only saying this phrase, it will likely have more success if users say the same thing as well.
+
