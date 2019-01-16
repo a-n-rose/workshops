@@ -11,6 +11,9 @@ import random
 import math
 import time
 
+#prepping the data
+from sklearn.model_selection import train_test_split
+
 #for the models
 import keras
 from keras.models import Sequential
@@ -82,64 +85,6 @@ def get_num_samples_per_speaker(ids,data):
         samples_list.append(sum(data[col_id]==speaker))
     return samples_list
 
-
-def split_train_val_test(speaker_ids,perc_train=None,perc_val=None,perc_test=None):
-    '''
-    Splits speakers into training, validation, and test
-    default: 80-10-10 ratio
-    
-    should put in 'random seed' functionality..
-    '''
-    if perc_train is None:
-        perc_train = 0.8
-        perc_val = 0.1
-        perc_test = 0.1
-        
-    num_speakers = len(speaker_ids)
-    num_train = int(num_speakers * perc_train)
-    num_val = int(num_speakers * perc_val)
-    num_test = int(num_speakers * perc_test)
-    
-    train = [0] * num_train
-    val = [1] * num_val
-    test = [2] * num_test
-    
-    randomly_assigned_conditions = np.concatenate((train,val,test))
-    random.shuffle(randomly_assigned_conditions)
-    
-    train_speakers = []
-    val_speakers = []
-    test_speakers = []
-    
-    #the number of assigned conditions might be slightly less than num_speakers
-    #using int() above does not round up, only down
-    if len(randomly_assigned_conditions) < num_speakers:
-        diff = num_speakers - len(randomly_assigned_conditions)
-        for j in range(diff):
-            rand_choice = np.random.choice([0,1,2],p=[0.8,0.1,0.1])
-            randomly_assigned_conditions=np.append(randomly_assigned_conditions,rand_choice) 
-            
-    for i in range(num_speakers):
-        if randomly_assigned_conditions[i] == 0:
-            train_speakers.append(speaker_ids[i])
-        elif randomly_assigned_conditions[i] == 1:
-            val_speakers.append(speaker_ids[i])
-        elif randomly_assigned_conditions[i] == 2:
-            test_speakers.append(speaker_ids[i])
-            
-    return train_speakers, val_speakers, test_speakers
-
-
-def separate_data_train_val_test(data,ids_train, ids_val, ids_test):
-    cols = data.columns
-    col_id = cols[1]
-    data["dataset"] = data[col_id].apply(lambda x: 0 if x in ids_train else(1 if x in ids_val else 2))
-    
-    train = data[data["dataset"]==0]
-    val = data[data["dataset"]==1]
-    test = data[data["dataset"]==2]
-    
-    return train, val, test
 
 def fill_matrix_speaker_samples_zero_padded(matrix2fill, row_id, data_supplied, indices, speaker_label, len_samps_per_id, label_for_zeropadded_rows,context_window_size):
     '''
@@ -386,26 +331,9 @@ if __name__=="__main__":
     print("max num samples: {}".format(max_samples))
     samples_per_speaker_zero_padded = (max_samples//frame_width)*frame_width
     
-    # don't want speakers to be mixed in both training and validation/test datasets:
-    # normally could use sklearn's train_test_split()
-    # Write own function that splits randomly, based on speaker!!
-    ids_train, ids_val, ids_test = split_train_val_test(ids)
-    
-    #not necessary - just a little check-in
-    num_train_speakers = len(ids_train)
-    print("Number of speakers in training set: {}".format(num_train_speakers))
-    num_val_speakers = len(ids_val)
-    print("Number of speakers in validation set: {}".format(num_val_speakers))
-    num_test_speakers = len(ids_test)
-    print("Number of speakers in test set: {}".format(num_test_speakers))
-    
-    train, val, test = separate_data_train_val_test(data,ids_train, ids_val, ids_test)
-    
-    print(train.head())
-    
-    train_zeropadded =  zero_pad_data(train,ids_train,context_window_size, max_samples)
-    val_zeropadded =  zero_pad_data(val,ids_val,context_window_size, max_samples)
-    test_zeropadded =  zero_pad_data(test,ids_test,context_window_size, max_samples)
+    #prepare the data to have same number of samples for each speaker
+    #if speakers don't have that number of samples, zero-pad their values
+    data_zeropadded =  zero_pad_data(data,ids,context_window_size, max_samples)
 
     
     '''
@@ -442,36 +370,16 @@ if __name__=="__main__":
     print("\nAll Data:\n")
     print("({},{},{},{},{})".format(A,B,C,D,E))
     
-    A_train = len(ids_train)
-    print("\nTraining Data:\n")
-    print("({},{},{},{},{})".format(A_train,B,C,D,E))
     
-    A_val = len(ids_val)
-    print("\nValidation Data:\n")
-    print("({},{},{},{},{})".format(A_val,B,C,D,E))
+    X, y = shape_data_dimensions_ConvNet_LSTM(data_zeropadded,samples_per_speaker_zero_padded, context_window_size=context_window_size)
     
-    A_test = len(ids_test)
-    print("\nTest Data:\n")
-    print("({},{},{},{},{})".format(A_test,B,C,D,E))
     
-    X_train, y_train = shape_data_dimensions_ConvNet_LSTM(train_zeropadded,samples_per_speaker_zero_padded, context_window_size=context_window_size)
-    
-    X_val, y_val = shape_data_dimensions_ConvNet_LSTM(val_zeropadded,samples_per_speaker_zero_padded, context_window_size=context_window_size)
-    
-    X_test, y_test = shape_data_dimensions_ConvNet_LSTM(test_zeropadded,samples_per_speaker_zero_padded, context_window_size=context_window_size)
+    #separate data into train, validation and test sets: 
+    #due to reshaping, each row belongs to just one speaker
+    #--> no mixing of speakers in training/validation/test sets
+    X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.1)
 
     
-    #see how balanced each data set is:
-    
-
-    
-    ids_f_train, ids_m_train = get_mf_ratio(ids_train, ids_f, ids_m)
-    ids_f_val, ids_m_val = get_mf_ratio(ids_val, ids_f, ids_m)
-    ids_f_test, ids_m_test = get_mf_ratio(ids_test, ids_f, ids_m)
-    
-    print("\n{}Data:\n\nNumber of female speakers = {}\nNumber of male speakers = {}\n".format("Training",ids_f_train,ids_m_train))
-    print("\n{}Data:\n\nNumber of female speakers = {}\nNumber of male speakers = {}\n".format("Validation",ids_f_val,ids_m_val))
-    print("\n{}Data:\n\nNumber of female speakers = {}\nNumber of male speakers = {}\n".format("Test",ids_f_test,ids_m_test))
     
     #train the models!
     
@@ -504,7 +412,7 @@ if __name__=="__main__":
         #compile model
         tfcnn_lstm.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
         #train model
-        tfcnn_lstm.fit(X_train, y_train, validation_data=(X_val,y_val),epochs=60)
+        tfcnn_lstm.fit(X_train, y_train, epochs=60, validation_split = 0.15)
         
         #predict test data
         pred = tfcnn_lstm.predict(X_test)
