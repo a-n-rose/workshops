@@ -42,5 +42,5 @@ if __name__=="__main__":
         #insert data
         insert_data_sql(database,tablename,fake_users)
     
-    except ExitApp as e:
-        print(e)
+    except ExitApp:
+        print("\nHave a great day!\n")

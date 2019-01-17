@@ -33,8 +33,7 @@ class Error(Exception):
 
 class ExitApp(Error):
     """If someone enters 'exit' as input, they exit the app"""
-    print("\nHave a good day!\n")
-    return None
+    pass
 
 
 
