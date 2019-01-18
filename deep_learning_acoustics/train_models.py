@@ -190,7 +190,7 @@ def fill_matrix_speaker_samples_zero_padded(matrix2fill, row_id, data_supplied, 
     return matrix2fill, row_id
 
 
-def zero_pad_data(data,ids,context_window_size, max_num_samples):
+def zero_pad_data(data,ids,num_features,context_window_size, max_num_samples):
     '''
     need to ensure each speaker has frames w sizes according to the context_window_size (i.e. context_window_size*2+1) -- the context window are the frames surrounding the sample of a particular class. If context window = 9, the whole frame would be 19.
 
@@ -206,17 +206,19 @@ def zero_pad_data(data,ids,context_window_size, max_num_samples):
     #len of new matrix with zero padded rows
     numrows_zeropadded_data = samples_per_speaker_zero_padded * num_speakers
     
-    data_zeropadded = np.zeros((numrows_zeropadded_data,41)) #40 = num features + 1 label column
+    data_zeropadded = np.zeros((numrows_zeropadded_data,num_features+1)) # num features + 1 label column
 
     # MONSTER FUNCTION!!
     # need to insert speech data according to user id and pad w zeros based on how many samples each speaker has available
     # need to keep track of row id and ensure it corresponds w where the row id should be
     
     
-    feature_cols = list(range(2,42)) #column names of MFCC coeffecients are 2,3,4,..41
-    features = data.loc[:,feature_cols].values # put all values into MATRIX
-    id_label_cols = [1,42] # 1 = id, 42 = female/male 
-    ids_labels = data.loc[:,id_label_cols].values
+    feature_cols = list(range(2,num_features+2)) #shift 2 columns over (1st --> sample id, 2nd --> speaker id; we want 3rd column +num_features
+    #for "dominant frequency" column:
+    #feature_cols.append(-2)
+    features = data.iloc[:,feature_cols].values # put all values into MATRIX
+    id_label_cols = [1,-1] # 1 = id, last column = sex 
+    ids_labels = data.iloc[:,id_label_cols].values
     
     # initialize row_id as 0, and it will get updated in the function
     # this helps me know that the right data is getting inserted in the right row of the new matrix
@@ -291,14 +293,10 @@ if __name__=="__main__":
     start = time.time()
     
     database = "male_female_speech_svd.db"
-    noise = None
-    if noise is None:
-        table_name = "mfcc_no_noise"
-    elif noise == "low":
-        table_name = "mfcc_low_noise"
-    elif noise == "high":
-        table_name = "mfcc_high_noise"
-    context_window_size = 9 # 9*2+1 = 19 total frame width
+    tablename = "features_mfcc_freq"
+
+    num_features = 41 #40 mfccs + 1 freq column
+    context_window_size = 5 # 9*2+1 = 19 total frame width; 5*2+1 = 11
     frame_width = context_window_size*2+1
     
     try:
@@ -306,7 +304,7 @@ if __name__=="__main__":
         c = conn.cursor()
         
         # get speech data
-        data = get_speech_data(table_name)
+        data = get_speech_data(tablename)
     except Error as e:
         print("Database error: {}".format(e))
     finally:
@@ -333,7 +331,7 @@ if __name__=="__main__":
     
     #prepare the data to have same number of samples for each speaker
     #if speakers don't have that number of samples, zero-pad their values
-    data_zeropadded =  zero_pad_data(data,ids,context_window_size, max_samples)
+    data_zeropadded =  zero_pad_data(data,ids,num_features,context_window_size, max_samples)
 
     
     '''
@@ -362,9 +360,9 @@ if __name__=="__main__":
     
     '''
     A = num_speakers
-    B = (max_samples//19) * 19 #using floor division
-    C = 19 #number of samples per "picture"
-    D = 40 #number of MFCC features
+    B = (max_samples//frame_width) * frame_width #using floor division
+    C = frame_width #number of samples per "picture"
+    D = num_features #number of features
     E = 1 #grayscale
     print("The dimension of this data, to be fed to both ConvNet and LSTM layers, needs to be... ")
     print("\nAll Data:\n")
@@ -389,7 +387,6 @@ if __name__=="__main__":
         tfcnn = Sequential()
         # feature maps = 40
         # 8x4 time-frequency filter (goes along both time and frequency axes)
-        num_features = 40
         color_scale = 1
         input_size = (frame_width,num_features,color_scale)
         tfcnn.add(Conv2D(40, kernel_size=(8,4), activation='relu'))
@@ -427,7 +424,7 @@ if __name__=="__main__":
         score = round(correct/float(len(y_test)) * 100, 2)
         print("\n\nmodel earned a score of {}%  for the test data.\n\n".format(score))
         
-        modelname = "female_male_speech_classifier_CNNLSTM_backgroundnoise_{}_{}acc_samps_{}".format(noise,int(score),samples_per_speaker_zero_padded)
+        modelname = "female_male_mfcc_domfreq_classifier_CNNLSTM_{}acc_samps_{}".format(int(score),samples_per_speaker_zero_padded)
         print('Saving Model')
         tfcnn_lstm.save(modelname+'.h5')
         print('Done!')

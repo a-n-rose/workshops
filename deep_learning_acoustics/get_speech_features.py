@@ -33,6 +33,10 @@ import librosa
 import statistics
 from scipy import stats
 
+def get_samps(wavefile,sr):
+    y, __ = librosa.load(wavefile,sr=sr)
+    return y
+
 
 def get_mfcc(y,sr,num_mfcc=None,window_size=None, window_shift=None):
     '''
@@ -118,12 +122,10 @@ def get_fundfreq(y,sr):
     fund_freq = []
     for i in frequencies:
         freq = np.unique(i)
-        if freq[0] != 0:
-            print(freq[0])
-            fund_freq.append(freq)
+        if len(freq) > 1:
+            fund_freq.append(freq[1])
         else:
-            if len(freq) > 1:
-                fund_freq.append(freq[1])
+            fund_freq.append(freq[0])
     return fund_freq
 
 
@@ -145,7 +147,7 @@ def get_domfreq(y,sr):
     
     dom_freq_index = [np.argmax(item) for item in magnitudes]
     
-    dom_freq = [frequencies[i][item] for i,item in enumerate(dom_freq_index) if frequencies[i][item] > 0]
+    dom_freq = [frequencies[i][item] for i,item in enumerate(dom_freq_index)]
     return dom_freq
 
 def get_domfreq_mean(y,sr):
@@ -252,7 +254,6 @@ def get_cq_transform(y,sr):
     cqt = np.transpose(cqt)
     return cqt
 
-
 def get_chroma_cqt(y,sr):
     chroma_cqt = librosa.feature.chroma_cqt(y,sr)
     chroma_cqt = np.transpose(chroma_cqt)
@@ -276,7 +277,6 @@ def get_chroma_stft(y,sr,window_size=None, window_shift=None):
     chroma_stft = librosa.feature.chroma_stft(y,sr,hop_length=hop_length,n_fft=n_fft)
     chroma_stft = np.transpose(chroma_stft)
     return chroma_stft
-
 
 def get_chroma_cens(y,sr):
     '''
@@ -323,7 +323,7 @@ def get_rmse(y,sr,window_size=None, window_shift=None):
     else:
         hop_length = int(window_shift*0.001*sr)
         
-    rmse = librosa.feature.melspectrogram(y,sr,frame_length=n_fft,hop_length=hop_length)
+    rmse = librosa.feature.rmse(y,frame_length=n_fft,hop_length=hop_length)
     rmse = np.transpose(rmse)
     return rmse
 
@@ -446,11 +446,14 @@ def get_notes_from_freq(frequency,octave=True, cents=True):
     NOTE: if cents == True, Octave also has to be True
     #'''
     #to prevent error:
-    if cents == True:
-        if octave == False:
-            print("If 'cents=True', 'octave' also has to be true.")
-            octave = True
-    notes = librosa.hz_to_note(frequency,octave=octave,cents=cents)
-    return notes
-
-
+    try:
+        if cents == True:
+            if octave == False:
+                print("If 'cents=True', 'octave' also has to be true.")
+                octave = True
+        notes = librosa.hz_to_note(frequency,octave=octave,cents=cents)
+        return notes
+    
+    except OverflowError as e:
+        print(e)
+    return None

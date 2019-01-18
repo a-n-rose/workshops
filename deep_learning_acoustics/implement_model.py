@@ -15,73 +15,104 @@ import keras
 from keras.models import model_from_json
 from keras.models import load_model
 
+import speech_collection 
+import get_speech_features as sf
+from errors import ExitApp
 
-def record_sound(sec):
-    sr = 16000
-    print("\n\nPlease say: 'Hallo, wie geht es ihnen?'")
-    background = sd.rec(int(sec*sr),samplerate=sr,channels=1)
-    sd.wait()
-    return background, sr
 
-def get_mfccs(filename,sr):
-    y, sr = librosa.load(filename,sr, res_type='kaiser_fast')
-    mfccs = librosa.feature.mfcc(y,sr,n_mfcc=40,hop_length=int(0.010*sr),n_fft=int(0.025*sr))
-    mfccs = np.transpose(mfccs)
-    return mfccs
+
 
 if __name__=="__main__":
-    num_features = 40
-    frame_width = 19
-    color_scale = 1
-    
-    print("\nType your firstname:\n")
-    name = input()
-    print("\nAre you ready to test the classifier? (Y/N):\n")
-    ready = input()
-    
-    if isinstance(ready, str) and "y" in ready.lower():
-        speaker_sample, sr = record_sound(6)
+    try:
+        sex = "female"
         
-        filename = "./data/speaker_{}.wav".format(name.lower())
-        sf.write(filename,speaker_sample,sr)
-        print("Background noise successfully saved at the following location:\n\n{}".format(filename))
-    #sr = 16000
-    #filename = "./data/speaker_aislyn.wav"
-        mfcc = get_mfccs(filename,sr)
+        num_features = 41
+        num_mfcc = 40
+        frame_width = 11
+        color_scale = 1
+        sampling_rate = 16000
+        noise_filename = "background_noise.wav"
+        if sex == "female":
+            speech_filename = "speaker_aislyn_satz.wav"
+            speech_nr_filename = "speech_modelready_aislyn11.wav"
+        else:
+            speech_filename = "speaker_thomas_satz.wav"
+            speech_nr_filename = "speech_modelready_thomas9.wav"
+            
+
+        print("Testing classifier with {} speech:".format(sex))
+        print("Press ENTER to start")
+        ready = input()
+        
+        if ready != "":
+            raise ExitApp()
+        
+        
+        #background_noise = speech_collection.record(5,sampling_rate)
+        #speech_collection.save_recording("noise_trash.wav",background_noise,sampling_rate)
+        #print("Please press Enter and then say loudly and clearly: \n\n'Hallo, wie geht es Ihnen?'\n")
+        #start = input()
+        #if start != "":
+        #    raise ExitApp()
+        
+        #speech = speech_collection.record(5,sampling_rate)
+        #print("\nNow saving..")
+        #speech_collection.save_recording("speech_trash.wav",speech,sampling_rate)
+        
+        print("\nNow extracting features..\n")
+        y_speech, sr = librosa.load(speech_filename,sr = sampling_rate)
+        #y_noise, sr = librosa.load("background_noise.wav",sr=sampling_rate)
+        #speech_rednoise = speech_collection.vad_rednoise(y_speech,y_noise,sampling_rate)
+        
+        #speech_collection.save_recording(speech_nr_filename,speech_rednoise,sampling_rate)
+        
+        mfcc = sf.get_mfcc(y_speech,sampling_rate,num_mfcc)
+        pitch = np.array(sf.get_domfreq(y_speech,sampling_rate))
+        pitch = pitch.reshape(len(pitch),1)
+        
+        features = np.concatenate((mfcc,pitch),axis=1)
+        print("\nClassifying speech..")
+
             
         #load model:
-        model_name = "female_male_speech_classifier_CNNLSTM_backgroundnoise_none3_98acc_samps_399"
+        model_name = "female_male_mfcc_domfreq_classifier_CNNLSTM_96acc_samps_407"
         num_samples_per_speaker = int(model_name[-3:])
         print(num_samples_per_speaker)
 
         model = load_model(model_name+".h5")
             
         #now need to shape data for ConvNet+LSTM network:
-        
-        #prep the mfcc data for the model:
-        num_samps_speaker = len(mfcc)
-        print("\nNumber of samples from this speaker: {}".format(num_samps_speaker))
-        
-        print(mfcc.shape)
-        mfcc = mfcc[:num_samples_per_speaker]
-        print(mfcc.shape)
+        print(features.shape)
+        features = features[:num_samples_per_speaker]
+        print(features.shape)
         
         num_series = num_samples_per_speaker//frame_width
+        features_classify = features.reshape((1,num_series,frame_width,num_features,color_scale))
+        print(features_classify.shape)
         
-        mfcc_classify = mfcc.reshape((1,num_series,frame_width,num_features,color_scale))
-        print(mfcc_classify.shape)
-        
-        prediction = model.predict(mfcc_classify)
+        prediction = model.predict(features_classify)
         print("\n\npredicted class:\n{}".format(prediction))
-        if prediction > 0.5:
+        if prediction > 0.60:
+            print("\nThis is pretty clear.\n")
             class_assignment = "male"
-            print("Speech is classified as {}".format(class_assignment.upper()))
+        elif prediction <= 0.6 and prediction >= 0.4:
+            print("\nThis is a close call... could go either way....\n")
+            if prediction > 0.5:
+                class_assignment = "male"
+            elif prediction < 0.5:
+                class_assignment = "female"
+            else:
+                class_assignment = "could not classify: either male or female"
         else:
+            print("\nThis is pretty clear.\n")
             class_assignment = "female"
-            print("Speech is classified as {}".format(class_assignment.upper()))
+        
+        print("Speech is classified as {}".format(class_assignment.upper()))
         print("\n\nIs this correct? (Y/N)\n")
         correct = input()
         if "y" in correct.lower():
             print("Great!!")
         elif "n" in correct.lower():
             print("Oops. My bad. \nI really don't think you sound {}. I just don't know how to handle all the different kinds of noise!\n\nHave a great day!".format(class_assignment))
+    except ExitApp:
+        print("\nHave a great day!\n")
