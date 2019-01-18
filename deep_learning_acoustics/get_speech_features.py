@@ -181,14 +181,17 @@ def get_1st_3rd_inter_quartile_range(frequency_list):
     q_range = abs(q_1 - q_3)
     return q_1,q_3,q_range
 
-def get_spectral_skewness():
-    pass
+def get_spectral_skewness(spectrum):
+    skew = stats.skew(spectrum)
+    return skew
 
-def get_spectral_kurtosis():
-    pass
+def get_spectral_kurtosis(spectrum):
+    kurtosis = stats.kurtosis(spectrum)
+    return kurtosis
 
-def get_spectral_entropy():
-    pass
+def get_spectral_entropy(spectrum):
+    entropy = stats.entropy(spectrum)
+    return entropy
 
 def get_spectral_flatness(y,sr,window_size=None, window_shift=None):
     '''
