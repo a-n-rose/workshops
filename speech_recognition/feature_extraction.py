@@ -94,7 +94,7 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         print("Have a good day!")
         logging.info("User exited app.")
     except FeatureExtractionError as e:
-        logging.info("Error occurred in feature extraction: {}".format(e))
+        logging.exception("Error occurred in feature extraction: {}".format(e))
     except Error as e:
         logging.exception("Database error: {}".format(e))
     except Exception as e:
@@ -106,4 +106,4 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
 
 
 if __name__=="__main__":
-    main(script_purpose="speech_feature_extraction")
+    main(script_purpose="speech_feature_extraction_speech_recognition")

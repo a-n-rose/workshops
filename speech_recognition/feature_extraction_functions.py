@@ -21,7 +21,7 @@ def collect_audio_and_labels():
     p = Path('.')
     waves = list(p.glob('**/*.wav'))
     #remove words repeated by same speaker from collection
-    x = [PurePath(waves[i]) for i in range(len(waves)) if waves[i].parts[-1][-5]==str(0)]
+    x = [PurePath(waves[i]) for i in range(len(waves)) if waves[i].parts[-1][-6:-3]=="_0."]
     y = [j.parts for j in x]
     return x, y
     
@@ -38,7 +38,6 @@ def get_speaker_id(path_label):
     if speaker_id_info[-1][0] != str(0):
         print("Problem with {}".format(path_label))
         print("Perhaps the speaker {} has already said the word '{}'.".format(speaker_id,path_label[1]))
-        logging.info("Repeated speaker: {}".format(path_label))
         return None
     return speaker_id_label
 
@@ -140,12 +139,14 @@ def get_mfcc(y,sr,num_mfcc=None,window_size=None, window_shift=None):
     mfccs = np.transpose(mfccs)
     return mfccs
 
-def get_mel_spectrogram(y,sr,window_size=None, window_shift=None):
+def get_mel_spectrogram(y,sr,num_mels = None,window_size=None, window_shift=None):
     '''
     set values: default for mel spectrogram calculation (FBANK)
     - windows of 25ms 
     - window shifts of 10ms
     '''
+    if num_mels is None:
+        num_mels = 40
     if window_size is None:
         n_fft = int(0.025*sr)
     else:
@@ -155,7 +156,7 @@ def get_mel_spectrogram(y,sr,window_size=None, window_shift=None):
     else:
         hop_length = int(window_shift*0.001*sr)
         
-    fbank = librosa.feature.melspectrogram(y,sr,n_fft=n_fft,hop_length=hop_length)
+    fbank = librosa.feature.melspectrogram(y,sr,n_fft=n_fft,hop_length=hop_length,n_mels=num_mels)
     fbank = np.transpose(fbank)
     return fbank
 
