@@ -24,7 +24,7 @@ def get_num_features():
     return int(num_features)
 
 def feature_type():
-    print("What kind of features will you extract? (e.g. mfcc, fbank)")
+    print("What kind of features will you extract? (e.g. mfcc, fbank, mfcc_pitch, fbank_pitch)")
     features = input()
     if "exit" in features.lower():
         raise ExitApp()
@@ -57,4 +57,5 @@ def create_new_table(database):
 
     if go():
         create_table(database,table,num_features)
-    return None
+        
+    return features, num_features, noise
