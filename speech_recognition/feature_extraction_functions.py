@@ -32,14 +32,11 @@ def get_speaker_id(path_label):
     '''
     speaker_id_info = path_label[-1].split("_")
     speaker_id = speaker_id_info[0]
-    speaker_id += "_" + path_label[1]
+    speaker_id_label = speaker_id+ "_" + path_label[1]
     if speaker_id_info[-1][0] != str(0):
-        #print(speaker_id_info[-1][0])
-        #print(speaker_id_info)
-        #print("This is a repeated word: {}".format(path_label))
-        print(speaker_id_info)
+        print("The speaker {} has already said the word '{}'.".format(speaker_id,path_label[1]))
         return None
-    return speaker_id
+    return speaker_id_label
 
 def organize_data(dictionary, path_labels, features):
     '''
@@ -52,15 +49,46 @@ def organize_data(dictionary, path_labels, features):
     '''
     speaker_id = get_speaker_id(path_labels)
     if speaker_id:
-        label = path_labels[1]
-        dictionary[speaker_id] = features
+        if speaker_id not in dictionary:
+            label = path_labels[1]
+            dictionary[speaker_id] = features
 
-    return dictionary, speaker_id
+    return dictionary
+
+def prep_data4sql(dictionary):
+    '''
+    input:
+    expects key to have speaker id and label, separated w "_"
+    expects values to be the features used to train model, in numpy array
     
+    returns:
+    list of tuples. the tuples correspond to sql columns:
+    index 0 --> speaker id
+    index ... --> features
+    index -1 --> label
+    '''
+    data_prepped = []
+    for key, value in dictionary.items():
+        speaker_id = key.split("_")[0]
+        label = key.split("_")[1]
+        
+        #to iterate through all of the samples of each utterance
+        #each word contains many feature sets/ samples
+        for row in value:
+            features = list(row)
+            features.insert(0,speaker_id)
+            features.append(label)
+            data_prepped.append(tuple(features))
+            
+    return data_prepped
  
  
 def get_features(wavefile,feature_type,num_features,noise):
     if noise:
+        '''
+        ToDo:
+        add option for adding noise to the data
+        '''
         pass
     y, sr = get_samps(wavefile)
     if "mfcc" in feature_type.lower():

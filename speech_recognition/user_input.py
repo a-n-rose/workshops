@@ -1,4 +1,5 @@
-from sql_functions import create_table
+from sql_functions import create_table, insert_data
+from errors import ExitApp
 
 def add_noise():
     print("Will you add noise? (Y/N)")
@@ -30,6 +31,32 @@ def feature_type():
         raise ExitApp()
     return features
 
+def get_label_column():
+    print("What is the column name for the label? (e.g. word, gender, class)")
+    label_column = input()
+    if "exit" in label_column.lower():
+        raise ExitApp()
+    print("You entered {}. Is that correct? (Y/N)".format(label_column))
+    correct = input()
+    if "y" in correct.lower():
+        pass
+    elif "exit" in correct.lower():
+        raise ExitApp()
+    else:
+        label_column = get_label_column()
+    return label_column
+
+def get_label_data_type():
+    print("What type of data will the label be saved in the table? (i.e. 'INT', or 'TEXT')")
+    data_type = input()
+    type_options = ["INT","INTEGER","TEXT"]
+    if data_type.upper() not in type_options:
+        print("Please enter one of the following: {}".format(", ").join(type_options))
+        data_type = label_data_type()
+    elif "exit" in data_type.lower():
+        raise ExitApp()
+    return data_type
+
 def go():
     print("Press ENTER to continue.")
     cont = input()
@@ -43,6 +70,8 @@ def go():
 def create_new_table(database):
     features = feature_type()
     num_features = get_num_features()
+    label_column = get_label_column()
+    label_data_type = get_label_data_type()
     noise = add_noise()
 
     if noise:
@@ -56,6 +85,18 @@ def create_new_table(database):
     print("\n\nTHE TABLE ~   {}   ~ WILL BE CREATED IN THE DATABASE ~   {}   ~".format(table,database))
 
     if go():
-        create_table(database,table,num_features)
+        create_table(database,table,num_features,label_column, label_data_type)
         
-    return features, num_features, noise
+    return table, features, num_features, label_column, label_data_type, noise
+
+def save2sql(database,tablename,data_prepped):
+    print("Press ENTER to save the data to the table ~  {}  ~ in the database ~  {}  ~".format(tablename,database))
+    cont = input()
+    if cont == "":
+        saved = insert_data(database,tablename,data_prepped)
+    elif "exit" in cont.lower():
+        raise ExitApp()
+    else:
+        save2sql(database,tablename,data_prepped)
+    return None
+    
