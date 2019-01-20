@@ -9,6 +9,7 @@ from scipy import stats
 #audio 
 import librosa
 
+from errors import FeatureExtractionError
 
 
 def collect_audio_and_labels():
@@ -19,7 +20,8 @@ def collect_audio_and_labels():
     '''
     p = Path('.')
     waves = list(p.glob('**/*.wav'))
-    x = [PurePath(waves[i]) for i in range(len(waves))]
+    #remove words repeated by same speaker from collection
+    x = [PurePath(waves[i]) for i in range(len(waves)) if waves[i].parts[-1][-5]==str(0)]
     y = [j.parts for j in x]
     return x, y
     
@@ -34,7 +36,9 @@ def get_speaker_id(path_label):
     speaker_id = speaker_id_info[0]
     speaker_id_label = speaker_id+ "_" + path_label[1]
     if speaker_id_info[-1][0] != str(0):
-        print("The speaker {} has already said the word '{}'.".format(speaker_id,path_label[1]))
+        print("Problem with {}".format(path_label))
+        print("Perhaps the speaker {} has already said the word '{}'.".format(speaker_id,path_label[1]))
+        logging.info("Repeated speaker: {}".format(path_label))
         return None
     return speaker_id_label
 
@@ -47,11 +51,10 @@ def organize_data(dictionary, path_labels, features):
     index 1 --> label for the speaker
     index 3 --> wavefile name of which contains the speaker ID in first section
     '''
-    speaker_id = get_speaker_id(path_labels)
-    if speaker_id:
-        if speaker_id not in dictionary:
-            label = path_labels[1]
-            dictionary[speaker_id] = features
+    speaker_id_label = get_speaker_id(path_labels)
+    if speaker_id_label:
+        if speaker_id_label not in dictionary:
+            dictionary[speaker_id_label] = features
 
     return dictionary
 
@@ -100,6 +103,8 @@ def get_features(wavefile,feature_type,num_features,noise):
         #make into dimension matching features to concatenate them
         freq = freq.reshape(len(features),1)
         features = np.concatenate((features,freq),axis=1)
+    if features.shape[1] != num_features:
+        raise FeatureExtractionError("The file '{}' results in the incorrect  number of columns: shape {}".format(wavefile,features.shape))
     return features
     
     
