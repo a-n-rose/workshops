@@ -114,13 +114,14 @@ def main(script_purpose,database=None,tablename=None):
         
         
         score = tfcnn_lstm.evaluate(X_test,y_test,verbose=1)
-        acc = "%s: %.2f%%" % (tfcnn_lstm.metrics_names[1], score[1]*100)
+        acc = round(score[1]*100,2)
+        
         print("Model Accuracy on test data:")
         print(acc)
         logging.info("Model Accuracy on TEST data: {}".format(acc))
         
         
-        modelname = "CNN_LSTM_speech_recognition_{}_{}recordings_{}epochs_{}acc".format(session_name,epochs,num_utterances,acc)
+        modelname = "CNN_LSTM_speech_recognition_{}_{}recordings_{}epochs_{}acc".format(session_name,num_utterances,epochs,acc)
         print('Saving Model')
         tfcnn_lstm.save(modelname+'.h5')
         print('Done!')
@@ -137,7 +138,9 @@ def main(script_purpose,database=None,tablename=None):
     finally:
         end = time.time()
         duration = round((end-start)/3600,3)
-        logging.info("Duration: {} hours".format(duration))
+        msg = "Duration: {} hours".format(duration)
+        logging.info(msg)
+        print(msg)
 
 
 if __name__=="__main__":
