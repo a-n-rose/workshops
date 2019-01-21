@@ -55,6 +55,13 @@ def main(script_purpose,database=None,tablename=None):
         X, y = featfun.encode_data(data,features_start_stop,labels_col,session_name)
         logging.info("Number of samples loaded: {}".format(len(X)))
         
+        '''
+        ToDo:
+        get samples to be same number
+        
+        get data to correct dimensions for model
+        '''
+        
         ######################################################################
         
     except ExitApp:
