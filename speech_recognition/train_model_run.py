@@ -4,7 +4,7 @@ Script outline
 
 1) load data
 
-2) prep data --> categorical data, one-hot-encoding, dimensionality
+2) prep data --> zeropad, encode categorical data, dimensionality
 
 3) train model
 
@@ -15,6 +15,13 @@ Script outline
 import time
 import os
 from sqlite3 import Error
+
+#for training
+from sklearn.model_selection import train_test_split
+#for the models
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, Flatten, LSTM, MaxPooling2D, Dropout, TimeDistributed
 
 import user_input 
 from errors import ExitApp, FeatureExtractionError
@@ -47,23 +54,78 @@ def main(script_purpose,database=None,tablename=None):
         #load data
         data = user_input.load_data(database,tablename)
 
+        #necessary variables:
+        id_col_index = 2 #index 0 --> sample ID, index 1 --> speaker ID
+        features_start_stop_index = [3,-1]
+        label_col_index = [-1]
+        num_features = 41
+        context_window_size = 9
+        frame_width = context_window_size*2+1
+        
         #prep data
-        #encode categorical data
-        #save labels to csv file
-        features_start_stop =[2,-1]
-        labels_col = -1
-        X, y = featfun.encode_data(data,features_start_stop,labels_col,session_name)
-        logging.info("Number of samples loaded: {}".format(len(X)))
+        #1) make sure each utterance has same number of samples;
+        #if not, zeropad them so each has same number of samples
+        data_zeropadded, samples_per_utterance, num_utterances, labels_present = featfun.prep_data(data,id_col_index,features_start_stop_index,label_col_index,num_features,frame_width,session_name)
         
-        '''
-        ToDo:
-        get samples to be same number
+        logging.info("Fixed number of samples per utterance: {}".format(samples_per_utterance))
+        logging.info("Number of utterances in data: {}".format(num_utterances))
         
-        get data to correct dimensions for model
-        '''
+        X, y = featfun.shape_data_dimensions_CNN_LSTM(data_zeropadded,samples_per_utterance,frame_width)
+        
+        logging.info("Shape of feature data: {}".format(X.shape))
+        logging.info("Shape of label data: {}".format(y.shape))
+        
+        #separate X and y --> training and test datasets
+        
+        X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.1)
         
         ######################################################################
         
+    #train the models!
+    
+        #TIME-FREQUENCY CONVNET
+        tfcnn = Sequential()
+        # feature maps = 40
+        # 8x4 time-frequency filter (goes along both time and frequency axes)
+        color_scale = 1
+        input_size = (frame_width,num_features,color_scale)
+        tfcnn.add(Conv2D(num_features, kernel_size=(8,4), activation='relu'))
+        #non-overlapping pool_size 3x3
+        tfcnn.add(MaxPooling2D(pool_size=(3,3)))
+        tfcnn.add(Dropout(0.25))
+        tfcnn.add(Flatten())
+        
+        #prepare LSTM
+        tfcnn_lstm = Sequential()
+        timestep = samples_per_utterance//frame_width
+        tfcnn_lstm.add(TimeDistributed(tfcnn,input_shape=(timestep,frame_width,num_features,color_scale)))
+        tfcnn_lstm.add(LSTM(timestep)) #num timesteps
+        tfcnn_lstm.add(Dense(len(labels_present),activation="softmax")) # binary = "sigmoid"; multiple classification = "softmax"
+        
+        
+        print(tfcnn_lstm.summary())
+        
+        
+        #compile model
+        tfcnn_lstm.compile(optimizer='adam',loss='categorical_crossentropy',metrics=['accuracy']) # binary = "binary_crossentropy", multiple (one-hot-encoded) = "categorical_crossentropy"; multiple (integer encoded) = "sparse_categorical_crossentropy" 
+        #train model
+        tfcnn_lstm.fit(X_train, y_train, epochs=60, validation_split = 0.15)
+        
+        
+        score = tfcnn_lstm.evaluate(X_test,y_test,verbose=1)
+        acc = "%s: %.2f%%" % (model.metrics_names[1], score[1]*100)
+        print("Model Accuracy on test data:")
+        print(acc)
+        logging.info("Model Accuracy on TEST data: {}".format(acc))
+        
+        
+        modelname = "CNN_LSTM_speech_recognition_{}_{}acc".format(session,acc)
+        print('Saving Model')
+        tfcnn_lstm.save(modelname+'.h5')
+        print('Done!')
+        print("\n\nModel saved as:\n{}".format(modelname))
+        
+
     except ExitApp:
         print("Have a good day!")
         logging.info("User exited app.")
@@ -73,8 +135,8 @@ def main(script_purpose,database=None,tablename=None):
         logging.exception("Error occurred: {}".format(e))
     finally:
         end = time.time()
-        duration = (end-start)/60
-        logging.info("Duration: {} minutes".format(duration))
+        duration = round((end-start)/3600,3)
+        logging.info("Duration: {} hours".format(duration))
 
 
 if __name__=="__main__":

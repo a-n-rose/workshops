@@ -9,3 +9,5 @@ class FeatureExtractionError(Error):
 class ExitApp(Error):
     pass
     
+class TotalSamplesNotAlignedSpeakerSamples(Error):
+    pass
