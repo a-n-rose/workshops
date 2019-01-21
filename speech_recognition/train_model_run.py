@@ -109,7 +109,7 @@ def main(script_purpose,database=None,tablename=None):
         #compile model
         tfcnn_lstm.compile(optimizer='adam',loss='categorical_crossentropy',metrics=['accuracy']) # binary = "binary_crossentropy", multiple (one-hot-encoded) = "categorical_crossentropy"; multiple (integer encoded) = "sparse_categorical_crossentropy" 
         #train model
-        epochs = 60
+        epochs = 50
         tfcnn_lstm.fit(X_train, y_train, epochs=epochs, validation_split = 0.15)
         
         
@@ -120,7 +120,7 @@ def main(script_purpose,database=None,tablename=None):
         logging.info("Model Accuracy on TEST data: {}".format(acc))
         
         
-        modelname = "CNN_LSTM_speech_recognition_{}_{}epochs_{}acc".format(session,epochs,acc)
+        modelname = "CNN_LSTM_speech_recognition_{}_{}recordings_{}epochs_{}acc".format(session_name,epochs,num_utterances,acc)
         print('Saving Model')
         tfcnn_lstm.save(modelname+'.h5')
         print('Done!')
