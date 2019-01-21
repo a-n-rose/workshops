@@ -73,8 +73,9 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         
         logging.info("Database: {}\nTable:{}\nFeatures: {}\nNumber of Features: {}\nLabel Column: {}\nLabel Data Type: {}\nNoise: {}\n".format(database,tablename,feature_type,num_features,label_column,label_data_type,noise))
         
-        start_feature_extraction = time.time()
+        limit = user_input.set_limit()
         
+        start_feature_extraction = time.time()
         if noise:
             '''
             Need to put in functionality to include noise in training
@@ -82,7 +83,6 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
             pass
         
         dict_data = {}
-        limit = None
         for i, wav in enumerate(paths):
             if limit:
                 if i <= limit:

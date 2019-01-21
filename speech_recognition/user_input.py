@@ -121,4 +121,12 @@ def load_data(database,table,columns=None):
     data = select_data(database,table,limit)
     return data
     
+def set_limit():
+    print("Is there a limit for the data? If YES: enter an INTEGER.")
+    limit = input()
+    if limit.isdigit():
+        limit = int(limit)
+    else:
+        limit = None
+    return limit
 
