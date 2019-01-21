@@ -11,6 +11,7 @@ work better/worse for 1) speech recognition 2) gender classification 3) handling
 import time
 import os
 from sqlite3 import Error
+import pandas as pd
 
 import user_input 
 from errors import ExitApp, FeatureExtractionError
@@ -57,7 +58,7 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         
         paths, labels = featfun.collect_audio_and_labels()
         
-        print("Would you like to extract the features and save the data to an SQL table? (Y/N)")
+        print("Would you like to extract the features and save the data to this SQL table? (Y/N)")
         cont = input()
         if "y" in cont.lower() or cont == "":
             pass
@@ -72,6 +73,7 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         
         logging.info("Database: {}\nTable:{}\nFeatures: {}\nNumber of Features: {}\nLabel Column: {}\nLabel Data Type: {}\nNoise: {}\n".format(database,tablename,feature_type,num_features,label_column,label_data_type,noise))
         
+        start_feature_extraction = time.time()
         
         if noise:
             '''
@@ -80,16 +82,27 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
             pass
         
         dict_data = {}
+        limit = None
         for i, wav in enumerate(paths):
-            #if i <= 100:
-            features = featfun.get_features(wav,feature_type,num_features,noise)
-            dict_data = featfun.organize_data(dict_data,labels[i],features)
-                
-        #need to save to sql table
+            if limit:
+                if i <= limit:
+                    features, extracted = featfun.get_features(wav,feature_type,num_features,noise)
+                    dict_data = featfun.organize_data(dict_data,labels[i],features)
+            else:
+                features, extracted = featfun.get_features(wav,feature_type,num_features,noise)
+                dict_data = featfun.organize_data(dict_data,labels[i],features)
+        
+        logging.info("Extracted features: {}".format(", ".join(extracted)))
+
         data_prepped = featfun.prep_data4sql(dict_data)
+        end_feature_extraction = time.time()
+        logging.info("Duration of feature extraction: {} minutes".format((end_feature_extraction-start_feature_extraction)/60))
+        
+        start_saving_data = time.time()
         logging.info("Number of samples: {}".format(len(data_prepped)))
         user_input.save2sql(database,tablename,data_prepped)
-        
+        end_saving_data = time.time()
+        logging.info("Duration of saving data: {} minutes".format((end_saving_data-start_saving_data)/60))
     except ExitApp:
         print("Have a good day!")
         logging.info("User exited app.")
