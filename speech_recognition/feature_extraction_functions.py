@@ -1,13 +1,18 @@
 #to work w Windows, Mac, and Linux:
 from pathlib import Path, PurePath
-
-#math
-import numpy as np
-import statistics
-from scipy import stats
+#saving labels
+import csv
 
 #audio 
 import librosa
+
+#math/data prep
+import numpy as np
+import pandas as pd
+import statistics
+from scipy import stats
+from sklearn.preprocessing import LabelEncoder
+
 
 from errors import FeatureExtractionError
 
@@ -38,6 +43,7 @@ def get_speaker_id(path_label):
     if speaker_id_info[-1][0] != str(0):
         print("Problem with {}".format(path_label))
         print("Perhaps the speaker {} has already said the word '{}'.".format(speaker_id,path_label[1]))
+        
         return None
     return speaker_id_label
 
@@ -70,7 +76,9 @@ def prep_data4sql(dictionary):
     index -1 --> label
     '''
     data_prepped = []
+    utterance_count = 0
     for key, value in dictionary.items():
+        utterance_count += 1
         speaker_id = key.split("_")[0]
         label = key.split("_")[1]
         
@@ -78,10 +86,10 @@ def prep_data4sql(dictionary):
         #each word contains many feature sets/ samples
         for row in value:
             features = list(row)
+            features.insert(0,utterance_count)
             features.insert(0,speaker_id)
             features.append(label)
             data_prepped.append(tuple(features))
-            
     return data_prepped
  
  
@@ -93,19 +101,22 @@ def get_features(wavefile,feature_type,num_features,noise):
         '''
         pass
     y, sr = get_samps(wavefile)
+    extracted = []
     if "mfcc" in feature_type.lower():
+        extracted.append("mfcc")
         features = get_mfcc(y,sr)
     elif "fbank" in feature_type.lower():
+        extracted.append("fbank")
         features = get_mel_spectrogram(y,sr)
     if "pitch" in feature_type.lower():
+        extracted.append("pitch")
         freq = np.array(get_domfreq(y,sr))
         #make into dimension matching features to concatenate them
         freq = freq.reshape(len(features),1)
         features = np.concatenate((features,freq),axis=1)
-    if features.shape[1] != num_features:
+    if features.shape[1] != num_features: 
         raise FeatureExtractionError("The file '{}' results in the incorrect  number of columns: shape {}".format(wavefile,features.shape))
-    return features
-    
+    return features, extracted
     
 def get_samps(wavefile,sr=None,high_quality=None):
     if sr is None:
@@ -134,7 +145,6 @@ def get_mfcc(y,sr,num_mfcc=None,window_size=None, window_shift=None):
         hop_length = int(0.010*sr)
     else:
         hop_length = int(window_shift*0.001*sr)
-        
     mfccs = librosa.feature.mfcc(y,sr,n_mfcc=num_mfcc,hop_length=hop_length,n_fft=n_fft)
     mfccs = np.transpose(mfccs)
     return mfccs
@@ -162,11 +172,9 @@ def get_mel_spectrogram(y,sr,num_mels = None,window_size=None, window_shift=None
 
 
 def get_domfreq(y,sr):
-
     frequencies, magnitudes = get_freq_mag(y,sr)
-    
+    #select only frequencies with largest magnitude, i.e. dominant frequency
     dom_freq_index = [np.argmax(item) for item in magnitudes]
-    
     dom_freq = [frequencies[i][item] for i,item in enumerate(dom_freq_index)]
     return dom_freq
 
@@ -184,9 +192,44 @@ def get_freq_mag(y,sr,window_size=None, window_shift=None):
         hop_length = int(0.010*sr)
     else:
         hop_length = int(window_shift*0.001*sr)
+    #collect frequencies present and their magnitudes
     frequencies,magnitudes = librosa.piptrack(y,sr,hop_length=hop_length,n_fft=n_fft)
-    
     frequencies = np.transpose(frequencies)
     magnitudes = np.transpose(magnitudes)
-
     return frequencies, magnitudes
+
+def prep_features(data,features_start_stop):
+    vals = data.iloc[:,features_start_stop[0]:features_start_stop[1]].values
+    return vals
+
+def get_labels(data):
+    labels = set(data.iloc[:,-1].values)
+    return list(labels)
+
+def prep_class_data(data,session):
+    labels = get_labels(data)
+    y = data.iloc[:,-1].values
+    print(y[:10])
+    # encode class values as integers
+    encoder = LabelEncoder()
+    encoder.fit(y)
+    y = encoder.transform(y)
+    labels_encoded = encoder.fit(labels)
+    save_labels(labels,labels_encoded,session)
+    return y
+
+def save_labels(labels,encoded_labels,session):
+    dict_labels = {}
+    for i, item in encoded_labels:
+        dict_labels[item] = labels[i]
+    filename = 'dict_labels_{}.csv'.format(session)
+    with open(filename,'w') as f:
+        w = csv.writer(f)
+        w.writerows(dict_labels.items())
+    return None
+
+def encode_data(data,features_start_stop,labels_col,session):
+    data = pd.DataFrame(data)
+    X = prep_features(data,features_start_stop)
+    y = prep_class_data(data,labels_col,session)
+    return X, y
