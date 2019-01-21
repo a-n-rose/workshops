@@ -199,28 +199,37 @@ def get_freq_mag(y,sr,window_size=None, window_shift=None):
     return frequencies, magnitudes
 
 def prep_features(data,features_start_stop):
+    print("Getting features..")
     vals = data.iloc[:,features_start_stop[0]:features_start_stop[1]].values
     return vals
 
-def get_labels(data):
-    labels = set(data.iloc[:,-1].values)
-    return list(labels)
+def get_labels(data,labels_col):
+    print("Getting labels..")
+    y = data.iloc[:,labels_col].values
+    labels = []
+    for label in y:
+        if label not in labels:
+            labels.append(label)
+    print(labels)
+    return y, labels
 
-def prep_class_data(data,session):
-    labels = get_labels(data)
-    y = data.iloc[:,-1].values
-    print(y[:10])
+def prep_class_data(data,labels_col,session):
+    y, labels = get_labels(data,labels_col)
     # encode class values as integers
+    print("Fitting the encoder on the data..")
     encoder = LabelEncoder()
     encoder.fit(y)
-    y = encoder.transform(y)
-    labels_encoded = encoder.fit(labels)
+    print("Encoding the labels..")
+    labels_encoded = list(encoder.transform(labels))
+    print("Saving labels..")
     save_labels(labels,labels_encoded,session)
+    print("Encoding the data")
+    y = encoder.transform(y)
     return y
 
-def save_labels(labels,encoded_labels,session):
+def save_labels(labels,labels_encoded,session):
     dict_labels = {}
-    for i, item in encoded_labels:
+    for i, item in enumerate(labels_encoded):
         dict_labels[item] = labels[i]
     filename = 'dict_labels_{}.csv'.format(session)
     with open(filename,'w') as f:
