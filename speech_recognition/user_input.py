@@ -1,4 +1,4 @@
-from sql_functions import create_table, insert_data
+from sql_functions import create_table, insert_data, select_data
 from errors import ExitApp
 
 def add_noise():
@@ -90,13 +90,35 @@ def create_new_table(database):
     return table, features, num_features, label_column, label_data_type, noise
 
 def save2sql(database,tablename,data_prepped):
-    print("Press ENTER to save the data to the table ~  {}  ~ in the database ~  {}  ~".format(tablename,database))
-    cont = input()
-    if cont == "":
-        saved = insert_data(database,tablename,data_prepped)
-    elif "exit" in cont.lower():
-        raise ExitApp()
-    else:
-        save2sql(database,tablename,data_prepped)
+    #print("Press ENTER to save the data to the table ~  {}  ~ in the database ~  {}  ~".format(tablename,database))
+    #cont = input()
+    #if cont == "":
+    saved = insert_data(database,tablename,data_prepped)
+    #elif "exit" in cont.lower():
+        #raise ExitApp()
+    #else:
+        #save2sql(database,tablename,data_prepped)
     return None
     
+def load_data(database,table,columns=None):
+    if columns is None:
+        columns = "all"
+    print("Loading data from {} columns from {} in database: {}".format(columns,table,database))
+    print("Do you have a row limit? Enter integer if yes, NO if not.")
+    limit = input()
+    if limit.isdigit():
+        limit = limit
+    else:
+        limit = None
+    print("Press ENTER to continue")
+    cont = input()
+    if "exit" in cont.lower():
+        raise ExitApp()
+    elif cont.lower() == "":
+        pass
+    else:
+        cont = load_data(database,table)
+    data = select_data(database,table,limit)
+    return data
+    
+
