@@ -206,10 +206,15 @@ def prep_features(data,features_start_stop):
 def get_labels(data,labels_col):
     print("Getting labels..")
     y = data.iloc[:,labels_col].values
-    labels = []
-    for label in y:
-        if label not in labels:
-            labels.append(label)
+    if len(y) > 1000000:
+        print("Iterating through labels to save memory..")
+        labels = []
+        for label in y:
+            if label not in labels:
+                labels.append(label)
+    else:
+        print("Getting labels via Pandas_DataFrame.unique()")
+        labels = data.iloc[:,labels_col].unique()
     print(labels)
     return y, labels
 
@@ -242,3 +247,11 @@ def encode_data(data,features_start_stop,labels_col,session):
     X = prep_features(data,features_start_stop)
     y = prep_class_data(data,labels_col,session)
     return X, y
+
+###################################################
+def get_ids(data,id_col):
+    cols = data.columns
+    col_id = cols[id_col]
+    ids = data[col_id]
+    ids = ids.unique()
+    return(ids)
