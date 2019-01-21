@@ -104,12 +104,7 @@ def load_data(database,table,columns=None):
     if columns is None:
         columns = "all"
     print("Loading data from {} columns from {} in database: {}".format(columns,table,database))
-    print("Do you have a row limit? Enter integer if yes, NO if not.")
-    limit = input()
-    if limit.isdigit():
-        limit = limit
-    else:
-        limit = None
+    limit = set_limit()
     print("Press ENTER to continue")
     cont = input()
     if "exit" in cont.lower():

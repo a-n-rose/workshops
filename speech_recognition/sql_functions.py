@@ -74,6 +74,8 @@ def select_data(database,table,limit=None):
         c = conn.cursor()
         
         if limit is not None:
+            if isinstance(limit,int):
+                limit = str(limit)
             table+=" LIMIT "+limit
         msg = '''SELECT * FROM %s''' % table
         
