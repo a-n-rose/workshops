@@ -2,7 +2,11 @@
 '''
 Script outline
 
-1) load data
+1) load data 
+expects title of table to contain: 
+- 'mfcc' or fbank 
+- the number of features
+- optionaly: 'pitch' or 'delta' if the table has those features
 
 2) prep data --> zeropad, encode categorical data, dimensionality
 
@@ -54,6 +58,7 @@ def main(script_purpose,database=None,tablename=None):
         
         #load data
         data = user_input.load_data(database,tablename)
+        
 
         #!!!!necessary variables for user to set!!!!!
         #~these set most of the subsequent variables
@@ -73,11 +78,6 @@ def main(script_purpose,database=None,tablename=None):
         
         #add feature columns based on which features are to be expected
         num_features, num_feature_columns = feature_column_prep(tablename)
-        
-        #I saved one table w 120 instead of 40... 
-        if num_features == 120:
-            num_feature_columns = num_features
-            num_features = int(120/3)
         
         print("The original number of features: {}".format(num_features))
         print("Total feature columns: {}".format(num_feature_columns))
@@ -150,7 +150,7 @@ def main(script_purpose,database=None,tablename=None):
         logging.info("Model Accuracy on TEST data: {}".format(acc))
         
         
-        modelname = "CNN_LSTM_{}_{}_{}_{}features_{}recordings_{}epochs_{}acc".format(session_name,database,tablename,num_features,num_utterances,epochs,acc)
+        modelname = "CNN_LSTM_{}_{}_{}_{}recordings_{}epochs_{}acc".format(session_name,database,tablename,num_utterances,epochs,acc)
         print('Saving Model')
         tfcnn_lstm.save(modelname+'.h5')
         print('Done!')
@@ -173,4 +173,4 @@ def main(script_purpose,database=None,tablename=None):
 
 
 if __name__=="__main__":
-    main(script_purpose="speech_feature_prep_train_model_speech_recognition",database="speech_commands.db",tablename="fbank_delta_20_no_noise")
+    main(script_purpose="speech_feature_prep_train_model_speech_recognition",database="speech_features.db",tablename="fbank_pitch_20_no_noise_word")
