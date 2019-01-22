@@ -31,6 +31,7 @@ import logging
 from my_logger import start_logging, get_date
 logger = logging.getLogger(__name__)
 
+from exercise_functions import feature_column_prep
 
 
 def main(script_purpose,database=None,tablename=None):
@@ -62,10 +63,13 @@ def main(script_purpose,database=None,tablename=None):
         context_window_size = 9
         frame_width = context_window_size*2+1
         
+        #add feature columns based on which features are to be expected
+        num_feature_columns = feature_column_prep(num_features,tablename)
+        
         #prep data
         #1) make sure each utterance has same number of samples;
         #if not, zeropad them so each has same number of samples
-        data_zeropadded, samples_per_utterance, num_utterances, labels_present = featfun.prep_data(data,id_col_index,features_start_stop_index,label_col_index,num_features,frame_width,session_name)
+        data_zeropadded, samples_per_utterance, num_utterances, labels_present = featfun.prep_data(data,id_col_index,features_start_stop_index,label_col_index,num_feature_columns,frame_width,session_name)
         
         logging.info("Fixed number of samples per utterance: {}".format(samples_per_utterance))
         logging.info("Number of utterances in data: {}".format(num_utterances))
@@ -109,7 +113,7 @@ def main(script_purpose,database=None,tablename=None):
         #compile model
         tfcnn_lstm.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy']) # binary = "binary_crossentropy", multiple (one-hot-encoded) = "categorical_crossentropy"; multiple (integer encoded) = "sparse_categorical_crossentropy" 
         #train model
-        epochs = 50
+        epochs = 5
         tfcnn_lstm.fit(X_train, y_train, epochs=epochs, validation_split = 0.15)
         
         
@@ -144,4 +148,4 @@ def main(script_purpose,database=None,tablename=None):
 
 
 if __name__=="__main__":
-    main(script_purpose="speech_feature_prep_train_model_speech_recognition",database="speech_commands.db",tablename="fbank_pitch_utteranceID_41_no_noise")
+    main(script_purpose="speech_feature_prep_train_model_speech_recognition",database="speech_commands.db",tablename="fbank_delta_120_no_noise")
