@@ -56,9 +56,9 @@ def main(script_purpose,database=None,tablename=None):
 
         #necessary variables:
         id_col_index = 2 #index 0 --> sample ID, index 1 --> speaker ID
-        features_start_stop_index = [3,-1]
+        features_start_stop_index = [3,-2]
         label_col_index = [-1]
-        num_features = 41
+        num_features = 40
         context_window_size = 9
         frame_width = context_window_size*2+1
         
@@ -121,7 +121,7 @@ def main(script_purpose,database=None,tablename=None):
         logging.info("Model Accuracy on TEST data: {}".format(acc))
         
         
-        modelname = "CNN_LSTM_{}_{}_{}_{}recordings_{}epochs_{}acc".format(session_name,database,tablename,num_utterances,epochs,acc)
+        modelname = "CNN_LSTM_{}_{}_{}_{}features_{}recordings_{}epochs_{}acc".format(session_name,database,tablename,num_features,num_utterances,epochs,acc)
         print('Saving Model')
         tfcnn_lstm.save(modelname+'.h5')
         print('Done!')
@@ -144,4 +144,4 @@ def main(script_purpose,database=None,tablename=None):
 
 
 if __name__=="__main__":
-    main(script_purpose="speech_feature_prep_train_model_speech_recognition",database="speech_commands.db",tablename="mfcc_pitch_utteranceID_41_no_noise")
+    main(script_purpose="speech_feature_prep_train_model_speech_recognition",database="speech_commands.db",tablename="fbank_pitch_utteranceID_41_no_noise")
