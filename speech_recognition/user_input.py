@@ -119,7 +119,9 @@ def load_data(database,table,columns=None):
 def set_limit():
     print("Is there a limit for the data? If YES: enter an INTEGER.")
     limit = input()
-    if limit.isdigit():
+    if "exit" in limit.lower():
+        raise ExitApp()
+    elif limit.isdigit():
         limit = int(limit)
     else:
         limit = None
