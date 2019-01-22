@@ -18,6 +18,8 @@ def create_table(database,table,num_features,label_column,label_data_type):
         c = conn.cursor()
         
         cols = []
+        if isinstance(num_features, str):
+            num_features = int(num_features)
         for i in range(num_features): 
             cols.append("'{}' REAL".format(i))
         cols_str = ", ".join(cols)
