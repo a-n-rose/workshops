@@ -51,13 +51,19 @@ def main(script_purpose,database=None,tablename=None):
         logging.info("Session: {}".format(session_name))
         
         ######################################################################
+        fbank_delta_120_no_noise
         
         #load data
         data = user_input.load_data(database,tablename)
 
         #necessary variables:
         id_col_index = 2 #index 0 --> sample ID, index 1 --> speaker ID
-        features_start_stop_index = [3,-1]
+        #if the data contains column w frequency info, assume it is the second to last column
+        if 'pitch' in tablename:
+            features_start_stop_index = [3,-2]
+        else:
+            features_start_stop_index = [3,-1]
+        #assumes last column is the label column
         label_col_index = [-1]
         num_features = 40
         context_window_size = 9
