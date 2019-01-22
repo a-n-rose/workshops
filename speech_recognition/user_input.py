@@ -97,7 +97,7 @@ def create_new_table(database):
     #set table name:
     features_standardized = "_".join(features_included)
 
-    table = "{}_{}_{}".format(features_standardized,num_feature_columns,description)
+    table = "{}_{}_{}".format(features_standardized,num_features,description)
     
     print("\n\nTHE TABLE ~   {}   ~ WILL BE CREATED IN THE DATABASE ~   {}   ~".format(table,database))
 
