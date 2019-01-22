@@ -13,7 +13,7 @@ def add_noise():
     return noise
 
 def get_num_features():
-    print("How many feature columns do you need?")
+    print("How many feature columns do you need? (If you want the derivatives, DON'T INCLUDE THE COLUMNS FOR THOSE VALUSE HERE)")
     num_features = input()
     if num_features.isdigit():
         pass
@@ -24,8 +24,8 @@ def get_num_features():
         num_features = get_num_features()
     return int(num_features)
 
-def feature_type():
-    print("What kind of features will you extract? (e.g. mfcc, fbank, mfcc_pitch, fbank_pitch)")
+def get_feature_type():
+    print("What kind of features will you extract? (e.g. mfcc, fbank, fbank with deltas, mfcc with pitch values)")
     features = input()
     if "exit" in features.lower():
         raise ExitApp()
@@ -68,11 +68,26 @@ def go():
     return True
 
 def create_new_table(database):
-    features = feature_type()
+    feature_type = get_feature_type()
     num_features = get_num_features()
     label_column = get_label_column()
     label_data_type = get_label_data_type()
     noise = add_noise()
+    
+    num_features = int(num_features)
+    num_feature_columns = num_features
+    features_included = []
+    if "mfcc" in feature_type.lower():
+        features_included.append("mfcc")
+    elif "fbank" or "mel filter bank" in feature_type.lower():
+        features_included.append("fbank")
+    if "pitch" in feature_type.lower():
+        features_included.append("pitch")
+        num_feature_columns += 1
+    if "derivative" or "delta" or "rate of change" in feature_type.lower():
+        features_included.append("delta")
+        #add delta and delta-delta values
+        num_feature_columns += num_features * 2 
 
     if noise:
         description = "w_noise"
@@ -80,14 +95,16 @@ def create_new_table(database):
         description = "no_noise"
     
     #set table name:
-    table = "{}_{}_{}".format(features,num_features,description)
+    features_standardized = "_".join(features_included)
+
+    table = "{}_{}_{}".format(features_standardized,num_feature_columns,description)
     
     print("\n\nTHE TABLE ~   {}   ~ WILL BE CREATED IN THE DATABASE ~   {}   ~".format(table,database))
 
     if go():
-        create_table(database,table,num_features,label_column, label_data_type)
+        create_table(database,table,num_feature_columns,label_column, label_data_type)
         
-    return table, features, num_features, label_column, label_data_type, noise
+    return table, features_standardized, num_features, num_feature_columns, label_column, label_data_type, noise
 
 def save2sql(database,tablename,data_prepped):
     #print("Press ENTER to save the data to the table ~  {}  ~ in the database ~  {}  ~".format(tablename,database))
@@ -126,4 +143,17 @@ def set_limit():
     else:
         limit = None
     return limit
-
+ 
+def get_desired_features():
+    print("With which features do you want to train the model? (e.g. MFCC, FBANK, MFCC and pitch, FBANK and deltas)")
+    features = input()
+    if "exit" in features.lower():
+        raise ExitApp()
+    print("\nYou entered: \n\n{}\n\nIs this correct? (Y/N)".format(features))
+    correct = input()
+    if "exit" in correct.lower():
+        raise ExitApp()
+    elif "y" not in correct.lower():
+        features = get_desired_features()
+        
+    return features

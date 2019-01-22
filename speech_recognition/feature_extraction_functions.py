@@ -99,29 +99,46 @@ def prep_data4sql(dictionary):
     return data_prepped
  
  
-def get_features(wavefile,feature_type,num_features,noise):
+def get_change_acceleration_rate(spectro_data):
+    #first derivative = delta (rate of change)
+    delta = librosa.feature.delta(spectro_data)
+    #second derivative = delta delta (acceleration changes)
+    delta_delta = librosa.feature.delta(spectro_data,order=2)
+    return delta, delta_delta
+
+
+def get_features(wavefile,feature_type,num_features,num_feature_columns,noise):
     if noise:
         '''
         ToDo:
         add option for adding noise to the data
         '''
         pass
+    if isinstance(num_features,str):
+        num_features = int(num_features)
     y, sr = get_samps(wavefile)
     extracted = []
     if "mfcc" in feature_type.lower():
         extracted.append("mfcc")
-        features = get_mfcc(y,sr)
+        features = get_mfcc(y,sr,num_mfcc=num_features)
+        if "delta" in feature_type.lower():
+            delta, delta_delta = get_change_acceleration_rate(features)
+            features = np.concatenate((features,delta,delta_delta),axis=1)
     elif "fbank" in feature_type.lower():
         extracted.append("fbank")
-        features = get_mel_spectrogram(y,sr)
+        features = get_mel_spectrogram(y,sr,num_mels = num_features)
+        if "delta" in feature_type.lower():
+            delta, delta_delta = get_change_acceleration_rate(features)
+            features = np.concatenate((features,delta,delta_delta),axis=1)
     if "pitch" in feature_type.lower():
         extracted.append("pitch")
         freq = np.array(get_domfreq(y,sr))
         #make into dimension matching features to concatenate them
         freq = freq.reshape(len(features),1)
         features = np.concatenate((features,freq),axis=1)
-    if features.shape[1] != num_features: 
-        raise FeatureExtractionError("The file '{}' results in the incorrect  number of columns: shape {}".format(wavefile,features.shape))
+
+    if features.shape[1] != num_feature_columns: 
+        raise FeatureExtractionError("The file '{}' results in the incorrect  number of columns (should be {} columns): shape {}".format(wavefile,num_features,features.shape))
     
     return features, extracted
 
@@ -391,4 +408,5 @@ def save_class_labels(class_labels,class_labels_encoded,session):
         w.writerows(dict_labels.items())
     
     return None
+
 
