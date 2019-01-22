@@ -55,9 +55,7 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
             raise ExitApp()
         
        
-        
 
-        
         paths, labels = featfun.collect_audio_and_labels()
         
         print("Would you like to extract the features and save the data to this SQL table? (Y/N)")
@@ -89,10 +87,10 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         for i, wav in enumerate(paths):
             if limit:
                 if i <= limit:
-                    features, extracted = featfun.get_features(wav,feature_type,num_features,noise)
+                    features, extracted = featfun.get_features(wav,feature_type,num_features,num_feature_columns,noise)
                     dict_data = featfun.organize_data(dict_data,labels[i],features)
             else:
-                features, extracted = featfun.get_features(wav,feature_type,num_features,noise)
+                features, extracted = featfun.get_features(wav,feature_type,num_features,num_feature_columns,noise)
                 dict_data = featfun.organize_data(dict_data,labels[i],features)
         
         logging.info("Extracted features: {}".format(", ".join(extracted)))

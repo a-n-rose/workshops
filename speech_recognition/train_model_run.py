@@ -51,26 +51,44 @@ def main(script_purpose,database=None,tablename=None):
         logging.info("Session: {}".format(session_name))
         
         ######################################################################
-        fbank_delta_120_no_noise
         
         #load data
         data = user_input.load_data(database,tablename)
 
-        #necessary variables:
+        #!!!!necessary variables for user to set!!!!!
+        #~these set most of the subsequent variables
         id_col_index = 2 #index 0 --> sample ID, index 1 --> speaker ID
+        context_window_size = 9
+        
+        
         #if the data contains column w frequency info, assume it is the second to last column
+        #also assumes features start after the relevant id column
         if 'pitch' in tablename:
-            features_start_stop_index = [3,-2]
+            features_start_stop_index = [id_col_index+1,-2]
         else:
-            features_start_stop_index = [3,-1]
+            features_start_stop_index = [id_col_index+1,-1]
         #assumes last column is the label column
         label_col_index = [-1]
-        num_features = 40
-        context_window_size = 9
-        frame_width = context_window_size*2+1
+        
         
         #add feature columns based on which features are to be expected
-        num_feature_columns = feature_column_prep(num_features,tablename)
+        num_features, num_feature_columns = feature_column_prep(tablename)
+        
+        if num_features == 120:
+            num_feature_columns = num_features
+            num_features = int(120/3)
+        
+        print("The original number of features: {}".format(num_features))
+        print("Total feature columns: {}".format(num_feature_columns))
+    
+        frame_width = context_window_size*2+1
+        
+        print("Press ENTER to continue")
+        cont = input()
+        if cont == "":
+            pass
+        else:
+            raise ExitApp()
         
         #prep data
         #1) make sure each utterance has same number of samples;
@@ -154,4 +172,4 @@ def main(script_purpose,database=None,tablename=None):
 
 
 if __name__=="__main__":
-    main(script_purpose="speech_feature_prep_train_model_speech_recognition",database="speech_commands.db",tablename="fbank_delta_120_no_noise")
+    main(script_purpose="speech_feature_prep_train_model_speech_recognition",database="speech_commands.db",tablename="fbank_delta_20_no_noise")
