@@ -107,7 +107,7 @@ def main(script_purpose,database=None,tablename=None):
         
         
         #compile model
-        tfcnn_lstm.compile(optimizer='adam',loss='categorical_crossentropy',metrics=['accuracy']) # binary = "binary_crossentropy", multiple (one-hot-encoded) = "categorical_crossentropy"; multiple (integer encoded) = "sparse_categorical_crossentropy" 
+        tfcnn_lstm.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy']) # binary = "binary_crossentropy", multiple (one-hot-encoded) = "categorical_crossentropy"; multiple (integer encoded) = "sparse_categorical_crossentropy" 
         #train model
         epochs = 50
         tfcnn_lstm.fit(X_train, y_train, epochs=epochs, validation_split = 0.15)

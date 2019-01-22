@@ -358,7 +358,7 @@ def shape_data_dimensions_CNN_LSTM(data_zeropadded,samples_per_utterance_zero_pa
     #collect labels only **once** per utterance 
     y_indices = list(range(0,len(labels),samples_per_utterance_zero_padded))
     y = labels[y_indices]
-    y = to_categorical(y)
+    #y = to_categorical(y)
     
     return X, y
 
