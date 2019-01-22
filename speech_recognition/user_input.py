@@ -29,6 +29,7 @@ def get_feature_type():
     features = input()
     if "exit" in features.lower():
         raise ExitApp()
+    print("You entered {}".format(features))
     return features
 
 def get_label_column():
@@ -36,7 +37,7 @@ def get_label_column():
     label_column = input()
     if "exit" in label_column.lower():
         raise ExitApp()
-    print("You entered {}. Is that correct? (Y/N)".format(label_column))
+    print("You entered ' {} '. Is that correct? (Y/N)".format(label_column))
     correct = input()
     if "y" in correct.lower():
         pass
@@ -84,7 +85,7 @@ def create_new_table(database):
     if "pitch" in feature_type.lower():
         features_included.append("pitch")
         num_feature_columns += 1
-    if "derivative" or "delta" or "rate of change" in feature_type.lower():
+    if "delta" in feature_type.lower():
         features_included.append("delta")
         #add delta and delta-delta values
         num_feature_columns += num_features * 2 
@@ -97,7 +98,7 @@ def create_new_table(database):
     #set table name:
     features_standardized = "_".join(features_included)
 
-    table = "{}_{}_{}".format(features_standardized,num_features,description)
+    table = "{}_{}_{}_{}".format(features_standardized,num_features,description,label_column)
     
     print("\n\nTHE TABLE ~   {}   ~ WILL BE CREATED IN THE DATABASE ~   {}   ~".format(table,database))
 
@@ -107,14 +108,8 @@ def create_new_table(database):
     return table, features_standardized, num_features, num_feature_columns, label_column, label_data_type, noise
 
 def save2sql(database,tablename,data_prepped):
-    #print("Press ENTER to save the data to the table ~  {}  ~ in the database ~  {}  ~".format(tablename,database))
-    #cont = input()
-    #if cont == "":
     saved = insert_data(database,tablename,data_prepped)
-    #elif "exit" in cont.lower():
-        #raise ExitApp()
-    #else:
-        #save2sql(database,tablename,data_prepped)
+    
     return None
     
 def load_data(database,table,columns=None):
