@@ -115,7 +115,7 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         logging.exception("Error occurred: {}".format(e))
     finally:
         end = time.time()
-        duration = (end-start)/60
+        duration = round((end-start)/60,2)
         logging.info("Duration: {} minutes".format(duration))
 
 
