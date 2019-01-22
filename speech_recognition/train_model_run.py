@@ -138,8 +138,15 @@ def main(script_purpose,database=None,tablename=None):
         #compile model
         tfcnn_lstm.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy']) # binary = "binary_crossentropy", multiple (one-hot-encoded) = "categorical_crossentropy"; multiple (integer encoded) = "sparse_categorical_crossentropy" 
         #train model
-        epochs = 5
-        tfcnn_lstm.fit(X_train, y_train, epochs=epochs, validation_split = 0.15)
+        epochs = 300
+        
+        model_train_name = "CNN_LSTM_training_{}".format(session_name)
+        callback = [EarlyStopping(monitor='val_loss', patience=15, verbose=1), 
+                    ReduceLROnPlateau(patience=5, verbose=1),
+                    CSVLogger(filename='model_log/{}_log.csv'.format(model_train_name)),
+                    ModelCheckpoint(filepath='bestmodel/bestmodel_{}.h5'.format(model_train_name), verbose=1, save_best_only=True)]
+        
+        history = tfcnn_lstm.fit(X_train, y_train, epochs=epochs, validation_split = 0.15, callbacks = callback)
         
         
         score = tfcnn_lstm.evaluate(X_test,y_test,verbose=1)
@@ -156,6 +163,22 @@ def main(script_purpose,database=None,tablename=None):
         print('Done!')
         print("\n\nModel saved as:\n{}".format(modelname))
         
+        print("Now saving history and plots")
+        
+        plt.plot(history.history['loss'])
+        plt.plot(history.history['val_loss'])
+        plt.title("train vs validation loss")
+        plt.ylabel("loss")
+        plt.xlabel("epoch")
+        plt.legend(["train","validation"], loc="upper right")
+        plt.savefig("{}_LOSS.png".format(modelname))
+        
+        plt.clf()
+        plt.plot(history.history['acc'])
+        plt.plot(history.history['val_acc'])
+        plt.title("train vs validation accuracy")
+        plt.legend(["train","validation"], loc="upper right")
+        plt.savefig("{}_ACCURACY.png".format(modelname))        
 
     except ExitApp:
         print("Have a good day!")
