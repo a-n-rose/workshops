@@ -59,6 +59,7 @@ def main(script_purpose,database=None,tablename=None):
         #load data
         data = user_input.load_data(database,tablename)
         
+        end_loaded_data = time.time()
 
         #!!!!necessary variables for user to set!!!!!
         #~these set most of the subsequent variables
@@ -110,8 +111,8 @@ def main(script_purpose,database=None,tablename=None):
         
         ######################################################################
         
-    #train the models!
-    
+        #train the models!
+        start_train = time.time()
         #TIME-FREQUENCY CONVNET
         tfcnn = Sequential()
         # feature maps = 40
@@ -189,10 +190,21 @@ def main(script_purpose,database=None,tablename=None):
         logging.exception("Error occurred: {}".format(e))
     finally:
         end = time.time()
-        duration = round((end-start)/3600,3)
-        msg = "Duration: {} hours".format(duration)
-        logging.info(msg)
-        print(msg)
+        duration = round((end-start)/3600,2)
+        msg1 = "Total Duration: {} hours".format(duration)
+        logging.info(msg1)
+        
+        duration_load_data = round((end_loaded_data - start)/60,2)
+        msg2 = "Duration to load data: {} minutes".format(duration_load_data)
+        logging.info(msg2)
+        
+        duration_prep = round((start_train - end_loaded_data)/60,2)
+        msg3 = "Duration to prep data: {}".format(duration_prep)
+        logging.info(msg3)
+        
+        duration_train = round((end-start_train)/60,2)
+        msg4 = "Duration to train models: {}".format(duration_train)
+        logging.info(msg4)
 
 
 if __name__=="__main__":
