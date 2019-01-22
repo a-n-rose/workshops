@@ -121,7 +121,7 @@ def main(script_purpose,database=None,tablename=None):
         logging.info("Model Accuracy on TEST data: {}".format(acc))
         
         
-        modelname = "CNN_LSTM_speech_recognition_{}_{}recordings_{}epochs_{}acc".format(session_name,num_utterances,epochs,acc)
+        modelname = "CNN_LSTM_{}_{}_{}_{}recordings_{}epochs_{}acc".format(session_name,database,tablename,num_utterances,epochs,acc)
         print('Saving Model')
         tfcnn_lstm.save(modelname+'.h5')
         print('Done!')
