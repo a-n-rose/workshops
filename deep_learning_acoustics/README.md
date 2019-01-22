@@ -93,6 +93,12 @@ To check your version type the following into the command-line (Linux):
 python3 --version
 ```
 
+4) For PyAudio, need to install portaudio19-dev. Otherwise can't pip install pyaudio :(
+
+```
+sudo apt-get install portaudio19-dev
+```
+
 To install all the python packages we will use, first start up your virtual environment (in the folder "deep_learning_acoustics"):
 
 ```
