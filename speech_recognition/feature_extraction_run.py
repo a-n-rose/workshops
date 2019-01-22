@@ -28,7 +28,7 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
     
     #set default values
     if database is None:
-        database = "speech_commands.db"
+        database = "speech_features.db"
     if feature_type is None:
         feature_type = "fbank_delta"
     if num_features is None:
@@ -54,8 +54,6 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         elif "exit" in new_table.lower():
             raise ExitApp()
         
-       
-
         paths, labels = featfun.collect_audio_and_labels()
         
         print("Would you like to extract the features and save the data to this SQL table? (Y/N)")
@@ -71,11 +69,11 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
             if "exit" in tablename.lower():
                 raise ExitApp()
     
-        
         logging.info("Database: {}\nTable:{}\nFeatures: {}\nNumber of Features: {}\nLabel Column: {}\nLabel Data Type: {}\nNoise: {}\n".format(database,tablename,feature_type,num_features,label_column,label_data_type,noise))
         
         limit = user_input.set_limit()
         
+        print("Now extracting the features: {}".format(feature_type))
         start_feature_extraction = time.time()
         if noise:
             '''
@@ -104,6 +102,7 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         user_input.save2sql(database,tablename,data_prepped)
         end_saving_data = time.time()
         logging.info("Duration of saving data: {} minutes".format((end_saving_data-start_saving_data)/60))
+        
     except ExitApp:
         print("Have a good day!")
         logging.info("User exited app.")
@@ -120,4 +119,5 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
 
 
 if __name__=="__main__":
-    main(script_purpose="speech_feature_extraction_speech_recognition")
+    database = "speech_features.db"
+    main(script_purpose="speech_feature_extraction",database=database)
