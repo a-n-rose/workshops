@@ -30,9 +30,9 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
     if database is None:
         database = "speech_commands.db"
     if feature_type is None:
-        feature_type = "mfcc_pitch"
+        feature_type = "fbank_delta"
     if num_features is None:
-        num_features = 41
+        num_features = 40
     if label_column is None:
         label_column = "word"
     if label_data_type is None:
@@ -45,16 +45,18 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
         start_logging(script_purpose)
         logging.info("Running script: {}".format(current_filename))
         logging.info("Session: {}".format(session_name))
-        
 
         print("Create NEW table? (Y/N)")
         new_table = input()
         if "y" in new_table.lower():
-            tablename, feature_type, num_features, label_column, label_data_type, noise = user_input.create_new_table(database)
+            tablename, feature_type, num_features, num_feature_columns, label_column, label_data_type, noise = user_input.create_new_table(database)
             logging.info("Table {} saved in the database {} successfully.".format(tablename,database))
         elif "exit" in new_table.lower():
             raise ExitApp()
         
+       
+        
+
         
         paths, labels = featfun.collect_audio_and_labels()
         
@@ -70,6 +72,7 @@ def main(script_purpose,database=None,feature_type=None,num_features=None,noise=
             tablename = input()
             if "exit" in tablename.lower():
                 raise ExitApp()
+    
         
         logging.info("Database: {}\nTable:{}\nFeatures: {}\nNumber of Features: {}\nLabel Column: {}\nLabel Data Type: {}\nNoise: {}\n".format(database,tablename,feature_type,num_features,label_column,label_data_type,noise))
         
