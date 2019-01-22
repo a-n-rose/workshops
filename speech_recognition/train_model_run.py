@@ -57,7 +57,7 @@ def main(script_purpose,database=None,tablename=None):
 
         #necessary variables:
         id_col_index = 2 #index 0 --> sample ID, index 1 --> speaker ID
-        features_start_stop_index = [3,-2]
+        features_start_stop_index = [3,-1]
         label_col_index = [-1]
         num_features = 40
         context_window_size = 9
@@ -93,7 +93,7 @@ def main(script_purpose,database=None,tablename=None):
         # 8x4 time-frequency filter (goes along both time and frequency axes)
         color_scale = 1
         input_size = (frame_width,num_features,color_scale)
-        tfcnn.add(Conv2D(num_features, kernel_size=(8,4), activation='relu'))
+        tfcnn.add(Conv2D(num_feature_columns, kernel_size=(8,4), activation='relu'))
         #non-overlapping pool_size 3x3
         tfcnn.add(MaxPooling2D(pool_size=(3,3)))
         tfcnn.add(Dropout(0.25))
@@ -102,7 +102,7 @@ def main(script_purpose,database=None,tablename=None):
         #prepare LSTM
         tfcnn_lstm = Sequential()
         timestep = samples_per_utterance//frame_width
-        tfcnn_lstm.add(TimeDistributed(tfcnn,input_shape=(timestep,frame_width,num_features,color_scale)))
+        tfcnn_lstm.add(TimeDistributed(tfcnn,input_shape=(timestep,frame_width,num_feature_columns,color_scale)))
         tfcnn_lstm.add(LSTM(timestep)) #num timesteps
         tfcnn_lstm.add(Dense(len(labels_present),activation="softmax")) # binary = "sigmoid"; multiple classification = "softmax"
         
