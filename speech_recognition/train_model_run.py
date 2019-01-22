@@ -74,6 +74,7 @@ def main(script_purpose,database=None,tablename=None):
         #add feature columns based on which features are to be expected
         num_features, num_feature_columns = feature_column_prep(tablename)
         
+        #I saved one table w 120 instead of 40... 
         if num_features == 120:
             num_feature_columns = num_features
             num_features = int(120/3)
