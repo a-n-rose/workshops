@@ -85,13 +85,6 @@ def main(script_purpose,database=None,tablename=None):
     
         frame_width = context_window_size*2+1
         
-        print("Press ENTER to continue")
-        cont = input()
-        if cont == "":
-            pass
-        else:
-            raise ExitApp()
-        
         #prep data
         #1) make sure each utterance has same number of samples;
         #if not, zeropad them so each has same number of samples
