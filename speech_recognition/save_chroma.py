@@ -54,27 +54,26 @@ def main(script_purpose):
         dict_new_paths = {}
         for label in class_labels:
             new_path = './{}/{}/'.format(new_directory,label)
-            print(new_path)
             try:
                 os.makedirs(new_path)
                 dict_new_paths[label] = new_path
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
-        print(dict_new_paths)
-
 
         start_feature_extraction = time.time()
-        limit = 10
+        limit = 500
+        frame_width = 19
+        time_step = 5
+        logging.info("extracting features from wavefiles. Limit = {}".format(limit))
         for i, wav in enumerate(paths):
             if limit:
                 if i <= limit:
-                    featfun.save_chroma(wav,feature_type,num_features,num_feature_columns,noise,dict_new_paths[label_list[i]])
+                    featfun.save_chroma(wav,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,dict_new_paths[label_list[i]])
         
 
         end_feature_extraction = time.time()
-        print("Duration of feature extraction: {} minutes".format((end_feature_extraction-start_feature_extraction)/60))
-        
+        print("Duration of feature extraction: {} minutes".format(round((end_feature_extraction-start_feature_extraction)/60,2)))
     except ExitApp:
         print("Have a good day!")
         logging.info("User exited app.")
