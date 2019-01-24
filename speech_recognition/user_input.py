@@ -68,6 +68,32 @@ def go():
         cont = go()
     return True
 
+def set_variables():
+    feature_type = get_feature_type()
+    num_features = get_num_features()
+    noise = add_noise()
+    num_features = int(num_features)
+    num_feature_columns = num_features
+    features_included = []
+    if "mfcc" in feature_type.lower():
+        features_included.append("mfcc")
+    elif "fbank" or "mel filter bank" in feature_type.lower():
+        features_included.append("fbank")
+    if "delta" in feature_type.lower():
+        features_included.append("delta")
+        #add delta and delta-delta values
+        num_feature_columns += num_features * 2 
+
+    if noise:
+        description = "w_noise"
+    else:
+        description = "no_noise"
+    #set table name:
+    features_standardized = "_".join(features_included)
+    table = "{}_{}_{}".format(features_standardized,num_features,description)
+    
+    return table, features_standardized, num_features, num_feature_columns, noise
+    
 def create_new_table(database):
     feature_type = get_feature_type()
     num_features = get_num_features()
