@@ -1,6 +1,6 @@
 # Workshop for PyLadies: February 12th, 2019
 
-**In the works!!** For background, please reference my <a href="https://a-n-rose.github.io/2019/01/13/workshop-pyladies-deeplearning-speech.html">blog post</a>.
+**In the works and subject to change!!** For background, please reference my <a href="https://a-n-rose.github.io/2019/01/13/workshop-pyladies-deeplearning-speech.html">blog post</a>.
 
 ## The Application of Deep Learning to Acoustics via Python
 
