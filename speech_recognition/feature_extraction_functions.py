@@ -29,7 +29,7 @@ def collect_audio_and_labels():
     labels are expected to be the names of each subdirectory in 'data'
     speaker ids are expected to be the first section of each wavefile
     '''
-    p = Path('./data2')
+    p = Path('./data')
     waves = list(p.glob('**/*.wav'))
     #remove words repeated by same speaker from collection
     x = [PurePath(waves[i]) for i in range(len(waves)) if waves[i].parts[-1][-6:-3]=="_0."]
@@ -108,7 +108,7 @@ def get_change_acceleration_rate(spectro_data):
     delta_delta = librosa.feature.delta(spectro_data,order=2)
     return delta, delta_delta
 
-def save_chroma(wavefile,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png):
+def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png):
     y, sr = get_samps(wavefile)
     extracted = []
     if "mfcc" in feature_type.lower():
@@ -128,30 +128,43 @@ def save_chroma(wavefile,frame_width,time_step,feature_type,num_features,num_fea
     
 
     features = np.transpose(features)
-
+    name = Path(wavefile).parts[-1][:-4]
     
-    
-    count = 0
-    while count <= time_step:
-        for i in range(0,features.shape[1],frame_width):
+    if split:
         
-            if i > features.shape[1]-1:
-                features_step = np.zeros((num_feature_columns,frame_width))
-            else:
-                features_step = features[:,i:i+frame_width]
+        count = 0
+        while count <= time_step:
+            for i in range(0,features.shape[1],frame_width):
             
-            if features_step.shape[1] != frame_width:
-                diff = frame_width - features_step.shape[1]
-                features_step = np.concatenate((features_step,np.zeros((num_feature_columns,diff))),axis=1)
-            
-            plt.clf()
-            librosa.display.specshow(features_step)
-            name = Path(wavefile).parts[-1][:-4]
-            plt.tight_layout(pad=0)
-            plt.savefig("{}{}_{}.png".format(path_to_save_png,name,count),pad_inches=0)
-            count+=1
-            if count > time_step:
-                break
+                if i > features.shape[1]-1:
+                    features_step = np.zeros((num_feature_columns,frame_width))
+                else:
+                    features_step = features[:,i:i+frame_width]
+                
+                if features_step.shape[1] != frame_width:
+                    diff = frame_width - features_step.shape[1]
+                    features_step = np.concatenate((features_step,np.zeros((num_feature_columns,diff))),axis=1)
+                
+                plt.clf()
+                librosa.display.specshow(features_step)
+                
+                plt.tight_layout(pad=0)
+                plt.savefig("{}{}_{}.png".format(path_to_save_png,name,count),pad_inches=0)
+                count+=1
+                if count > time_step:
+                    break
+    else:
+
+        plt.clf()
+        max_len = frame_width*time_step
+        if features.shape[1] < max_len:
+            diff = max_len - features.shape[1]
+            features = np.concatenate((features,np.zeros((num_feature_columns,diff))),axis=1)
+        librosa.display.specshow(features[:,:max_len])
+        plt.tight_layout(pad=0)
+        plt.savefig("{}{}.png".format(path_to_save_png,name))
+        
+        
     return True
 
 def get_features(wavefile,feature_type,num_features,num_feature_columns,noise):
