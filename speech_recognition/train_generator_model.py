@@ -127,7 +127,7 @@ loss = "categorical_crossentropy"
 print("Loss set at: '{}'".format(loss))
 
 #compile model
-model.compile(optimizer='adam',loss=loss,metrics=['accuracy'])
+model.compile(optimizer='sgd',loss=loss,metrics=['accuracy'])
 
 
 
@@ -212,7 +212,11 @@ model_name = "CNN_LSTM_generator_testing_{}epochs_{}trainimages_{}valimages".for
 
 early_stopping_callback = EarlyStopping(monitor='val_loss', patience=5)
 
+csv_logging = CSVLogger(filename='model_log/{}_log.csv'.format(model_name))
+
 checkpoint_callback = ModelCheckpoint(model_name+'.h5', monitor='val_loss', verbose=1, save_best_only=True, mode='min')
+
+
 
 #history = model.fit_generator(datagen.flow(X_train, y_train, batch_size=batch_size),
             #steps_per_epoch=len(X_train) / batch_size, validation_data=(X_test, y_test),
@@ -229,10 +233,10 @@ history = model.fit_generator(
 
 score = model.evaluate_generator(testGenerator, num_test_images//batch_size)
 
-loss = round(score[0]*100,2)
-acc = round(score[1]*100,2)
+loss = round(score[0],2)
+acc = round(score[1]*100,3)
 
-msg="Model Accuracy on test data: {}%\nModel Loss on test data: {}%".format(acc,loss)
+msg="Model Accuracy on test data: {}%\nModel Loss on test data: {}".format(acc,loss)
 print(msg)
 logging.info(msg)
 
@@ -251,11 +255,11 @@ plt.title("train vs validation loss")
 plt.ylabel("loss")
 plt.xlabel("epoch")
 plt.legend(["train","validation"], loc="upper right")
-plt.savefig("./graphs/{}_LOSS.png".format(modelname))
+plt.savefig("./graphs/{}_LOSS.png".format(modelname_final))
 
 plt.clf()
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
 plt.title("train vs validation accuracy")
 plt.legend(["train","validation"], loc="upper right")
-plt.savefig("./graphs/{}_ACCURACY.png".format(modelname))
+plt.savefig("./graphs/{}_ACCURACY.png".format(modelname_final))
