@@ -21,7 +21,28 @@ from errors import FeatureExtractionError, TotalSamplesNotAlignedSpeakerSamples
 from monster_functions import fill_matrix_samples_zero_padded
 
 
+def collect_labels():
+    p = Path('./data')
+    labels = list(p.glob('*/'))
+    labels = [PurePath(labels[i]) for i in range(len(labels))]
+    labels = [x.parts[1] for x in labels if '_' not in x.parts[1]]
+    return labels
 
+def get_num_images(data_directory,image_format=None):
+    if image_format is None:
+        image_format = 'png'
+    p = Path(data_directory)
+    pics = list(p.glob('**/*.{}'.format(image_format)))
+    return len(pics)
+    
+
+def check_4_github_files(labels_list):
+    if 'README.md' in labels_list:
+        labels_list.remove('README.md')
+    if 'LICENSE' in labels_list:
+        labels_list.remove('LICENSE')
+    return labels_list
+    
 
 def collect_audio_and_labels():
     '''
