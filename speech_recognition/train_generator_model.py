@@ -1,5 +1,7 @@
 #installed Pillow-5.4.1
 
+#if I want to include callbacks, explore this: https://github.com/keras-team/keras/issues/6309
+
 import time
 import os
 from sqlite3 import Error
@@ -26,9 +28,9 @@ logger = logging.getLogger(__name__)
 
 #set variables
 modelname = "CNN_LSTM_generator_color"
-batch_size = 5 #number of 5-piece segments
+batch_size = 6 #number of 19-framed segments of 120 features (and 3rgb values)
 split = True
-timestep = 5
+timestep = 6
 frame_width = 19
 num_features = 120
 color_scale = 3 # if 'rgb', color_scale = 3, if 'grayscale', color_scale = 1
@@ -152,7 +154,7 @@ def trainGeneratorFunc():
     while True:
         x, y = train_generator.next()
         x = np.reshape(x,(1,x.shape[0],x.shape[1],x.shape[2],color_scale))
-        y = y[0,] #save just one from the 5 from the batchsize - they all have the same label
+        y = y[0,] #save just one from the 6 from the batchsize - they all have the same label
         y = np.reshape(y,(1,y.shape[0]))
         yield x, y
         
@@ -160,24 +162,33 @@ def valGeneratorFunc():
     while True:
         x, y = val_generator.next()
         x = np.reshape(x, (1,x.shape[0],x.shape[1],x.shape[2],color_scale))
-        y = y[0,] #save just one from the 5 from the batchsize - they all have the same label
+        y = y[0,] #save just one from the 6 from the batchsize - they all have the same label
         y = np.reshape(y,(1,y.shape[0]))
         yield x, y
-#after this fix.. after the first epoch:
+#after this fix (keeping only the first y value (the other all have same y value - represent the same utterance)) after the first epoch:
 #ValueError: Error when checking input: expected time_distributed_1_input to have shape (5, 120, 19, 3) but got array with shape (4, 120, 19, 3)
-
         
         
 trainGenerator = trainGeneratorFunc()
 valGenerator = valGeneratorFunc()
 
 
+#history = model.fit_generator(
+        #trainGenerator,
+        #steps_per_epoch = num_train_images // batch_size,
+        #epochs = 50,
+        #validation_data = valGenerator, 
+        #validation_steps = num_val_images // batch_size
+        #)
+#after this fix.. after the first epoch:
+#ValueError: Error when checking input: expected time_distributed_1_input to have shape (5, 120, 19, 3) but got array with shape (4, 120, 19, 3)
+#https://github.com/keras-team/keras/issues/10164
 history = model.fit_generator(
         trainGenerator,
-        steps_per_epoch = num_train_images // batch_size,
-        epochs = 50,
+        steps_per_epoch = num_train_images//batch_size,
+        epochs = 25,
         validation_data = valGenerator, 
-        validation_steps = num_val_images // batch_size
+        validation_steps = num_val_images//batch_size
         )
 
 
