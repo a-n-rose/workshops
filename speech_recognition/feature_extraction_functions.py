@@ -5,6 +5,8 @@ import csv
 
 #audio 
 import librosa
+import librosa.display
+import matplotlib.pyplot as plt
 
 #math/data prep
 import numpy as np
@@ -13,13 +15,34 @@ import math
 import statistics
 from scipy import stats
 from sklearn.preprocessing import LabelEncoder
-from keras.utils.np_utils import to_categorical
+#from keras.utils.np_utils import to_categorical
 
 from errors import FeatureExtractionError, TotalSamplesNotAlignedSpeakerSamples
 from monster_functions import fill_matrix_samples_zero_padded
 
 
+def collect_labels():
+    p = Path('./data')
+    labels = list(p.glob('*/'))
+    labels = [PurePath(labels[i]) for i in range(len(labels))]
+    labels = [x.parts[1] for x in labels if '_' not in x.parts[1]]
+    return labels
 
+def get_num_images(data_directory,image_format=None):
+    if image_format is None:
+        image_format = 'png'
+    p = Path(data_directory)
+    pics = list(p.glob('**/*.{}'.format(image_format)))
+    return len(pics)
+    
+
+def check_4_github_files(labels_list):
+    if 'README.md' in labels_list:
+        labels_list.remove('README.md')
+    if 'LICENSE' in labels_list:
+        labels_list.remove('LICENSE')
+    return labels_list
+    
 
 def collect_audio_and_labels():
     '''
@@ -27,7 +50,7 @@ def collect_audio_and_labels():
     labels are expected to be the names of each subdirectory in 'data'
     speaker ids are expected to be the first section of each wavefile
     '''
-    p = Path('.')
+    p = Path('./data')
     waves = list(p.glob('**/*.wav'))
     #remove words repeated by same speaker from collection
     x = [PurePath(waves[i]) for i in range(len(waves)) if waves[i].parts[-1][-6:-3]=="_0."]
@@ -106,6 +129,64 @@ def get_change_acceleration_rate(spectro_data):
     delta_delta = librosa.feature.delta(spectro_data,order=2)
     return delta, delta_delta
 
+def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png):
+    y, sr = get_samps(wavefile)
+    extracted = []
+    if "mfcc" in feature_type.lower():
+        extracted.append("mfcc")
+        features = get_mfcc(y,sr,num_mfcc=num_features)
+        if "delta" in feature_type.lower():
+            delta, delta_delta = get_change_acceleration_rate(features)
+            features = np.concatenate((features,delta,delta_delta),axis=1)
+    elif "fbank" in feature_type.lower():
+        extracted.append("fbank")
+        features = get_mel_spectrogram(y,sr,num_mels = num_features)
+        if "delta" in feature_type.lower():
+            delta, delta_delta = get_change_acceleration_rate(features)
+            features = np.concatenate((features,delta,delta_delta),axis=1)
+    if features.shape[1] != num_feature_columns: 
+        raise FeatureExtractionError("The file '{}' results in the incorrect  number of columns (should be {} columns): shape {}".format(wavefile,num_features,features.shape))
+    
+
+    features = np.transpose(features)
+    name = Path(wavefile).parts[-1][:-4]
+    
+    if split:
+        
+        count = 0
+        while count <= time_step:
+            for i in range(0,features.shape[1],frame_width):
+            
+                if i > features.shape[1]-1:
+                    features_step = np.zeros((num_feature_columns,frame_width))
+                else:
+                    features_step = features[:,i:i+frame_width]
+                
+                if features_step.shape[1] != frame_width:
+                    diff = frame_width - features_step.shape[1]
+                    features_step = np.concatenate((features_step,np.zeros((num_feature_columns,diff))),axis=1)
+                
+                plt.clf()
+                librosa.display.specshow(features_step)
+                
+                plt.tight_layout(pad=0)
+                plt.savefig("{}{}_{}.png".format(path_to_save_png,name,count),pad_inches=0)
+                count+=1
+                if count > time_step:
+                    break
+    else:
+
+        plt.clf()
+        max_len = frame_width*time_step
+        if features.shape[1] < max_len:
+            diff = max_len - features.shape[1]
+            features = np.concatenate((features,np.zeros((num_feature_columns,diff))),axis=1)
+        librosa.display.specshow(features[:,:max_len])
+        plt.tight_layout(pad=0)
+        plt.savefig("{}{}.png".format(path_to_save_png,name))
+        
+        
+    return True
 
 def get_features(wavefile,feature_type,num_features,num_feature_columns,noise):
     if noise:
@@ -283,9 +364,6 @@ def get_num_samples_per_id(ids,data,col_id):
         samples_list.append(sum(data[col_id_name]==id_num))
     
     return samples_list
-
-
-
 
 def prep_data(data,id_col_index,features_start_stop_index,label_col_index,num_features,frame_width,session):
     data_df = pd.DataFrame(data)
