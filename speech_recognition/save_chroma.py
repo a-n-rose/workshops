@@ -3,11 +3,14 @@ Extracts speech features and puts into SQL database
 
 I want to see if 
 
-MFCC vs FBANK
-dominant frequency VS fundamental frequency
+MFCC vs FBANK vs STFT
 
 work better/worse for 1) speech recognition 2) gender classification 3) handling noise
+
+would it be necessary to apply VAD?
+training with noise?
 '''
+
 import time
 import os, errno
 import pandas as pd
