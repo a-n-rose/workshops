@@ -131,31 +131,31 @@ def get_change_acceleration_rate(spectro_data):
 
 def remove_silences(y):
     yt = librosa.effects.trim(y)
-    return yt
+    return yt[0]
 
 def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png):
 
     y, sr = get_samps(wavefile)
-    #play with removing silence
+    y = remove_silences(y)
     extracted = []
     if "mfcc" in feature_type.lower():
         extracted.append("mfcc")
         features = get_mfcc(y,sr,num_mfcc=num_features)
-        #features = (np.mean(features, axis=0) + 1e-8)
+        features -= (np.mean(features, axis=0) + 1e-8)
         if "delta" in feature_type.lower():
             delta, delta_delta = get_change_acceleration_rate(features)
             features = np.concatenate((features,delta,delta_delta),axis=1)
     elif "fbank" in feature_type.lower():
         extracted.append("fbank")
         features = get_mel_spectrogram(y,sr,num_mels = num_features)
-        #features = (np.mean(features, axis=0) + 1e-8)
+        features -= (np.mean(features, axis=0) + 1e-8)
         if "delta" in feature_type.lower():
             delta, delta_delta = get_change_acceleration_rate(features)
             features = np.concatenate((features,delta,delta_delta),axis=1)
     elif "stft" in feature_type.lower():
         extracted.append("stft")
         features = get_stft(y,sr)
-        #features = (np.mean(features, axis=0) + 1e-8)
+        features -= (np.mean(features, axis=0) + 1e-8)
         if "delta" in feature_type.lower():
             delta, delta_delta = get_change_acceleration_rate(features)
             features = np.concatenate((features,delta,delta_delta),axis=1)
