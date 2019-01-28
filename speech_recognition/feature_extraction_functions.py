@@ -18,11 +18,11 @@ from sklearn.preprocessing import LabelEncoder
 #from keras.utils.np_utils import to_categorical
 
 from errors import FeatureExtractionError, TotalSamplesNotAlignedSpeakerSamples
-from monster_functions import fill_matrix_samples_zero_padded
+#from monster_functions import fill_matrix_samples_zero_padded
 
 
-def collect_labels():
-    p = Path('./data')
+def collect_labels(data_path):
+    p = Path(data_path)
     labels = list(p.glob('*/'))
     labels = [PurePath(labels[i]) for i in range(len(labels))]
     labels = [x.parts[1] for x in labels if '_' not in x.parts[1]]
@@ -44,16 +44,16 @@ def check_4_github_files(labels_list):
     return labels_list
     
 
-def collect_audio_and_labels():
+def collect_audio_and_labels(data_path):
     '''
     expects wavefiles to be in subdirectory: 'data'
     labels are expected to be the names of each subdirectory in 'data'
     speaker ids are expected to be the first section of each wavefile
     '''
-    p = Path('./data')
+    p = Path(data_path)
     waves = list(p.glob('**/*.wav'))
     #remove words repeated by same speaker from collection
-    x = [PurePath(waves[i]) for i in range(len(waves)) if waves[i].parts[-1][-6:-3]=="_0."]
+    x = [PurePath(waves[i]) for i in range(len(waves))]
     y = [j.parts for j in x]
     return x, y
     
@@ -129,18 +129,33 @@ def get_change_acceleration_rate(spectro_data):
     delta_delta = librosa.feature.delta(spectro_data,order=2)
     return delta, delta_delta
 
+def remove_silences(y):
+    yt = librosa.effects.trim(y)
+    return yt
+
 def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png):
+
     y, sr = get_samps(wavefile)
+    #play with removing silence
     extracted = []
     if "mfcc" in feature_type.lower():
         extracted.append("mfcc")
         features = get_mfcc(y,sr,num_mfcc=num_features)
+        #features = (np.mean(features, axis=0) + 1e-8)
         if "delta" in feature_type.lower():
             delta, delta_delta = get_change_acceleration_rate(features)
             features = np.concatenate((features,delta,delta_delta),axis=1)
     elif "fbank" in feature_type.lower():
         extracted.append("fbank")
         features = get_mel_spectrogram(y,sr,num_mels = num_features)
+        #features = (np.mean(features, axis=0) + 1e-8)
+        if "delta" in feature_type.lower():
+            delta, delta_delta = get_change_acceleration_rate(features)
+            features = np.concatenate((features,delta,delta_delta),axis=1)
+    elif "stft" in feature_type.lower():
+        extracted.append("stft")
+        features = get_stft(y,sr)
+        #features = (np.mean(features, axis=0) + 1e-8)
         if "delta" in feature_type.lower():
             delta, delta_delta = get_change_acceleration_rate(features)
             features = np.concatenate((features,delta,delta_delta),axis=1)
@@ -154,26 +169,26 @@ def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,n
     if split:
         
         count = 0
-        while count <= time_step:
-            for i in range(0,features.shape[1],frame_width):
+        #while count <= time_step:
+            #for i in range(0,features.shape[1],frame_width):
+        for i in range(0,time_step*frame_width,frame_width):
+            if i > features.shape[1]-1:
+                features_step = np.zeros((num_feature_columns,frame_width))
+            else:
+                features_step = features[:,i:i+frame_width]
             
-                if i > features.shape[1]-1:
-                    features_step = np.zeros((num_feature_columns,frame_width))
-                else:
-                    features_step = features[:,i:i+frame_width]
-                
-                if features_step.shape[1] != frame_width:
-                    diff = frame_width - features_step.shape[1]
-                    features_step = np.concatenate((features_step,np.zeros((num_feature_columns,diff))),axis=1)
-                
-                plt.clf()
-                librosa.display.specshow(features_step)
-                
-                plt.tight_layout(pad=0)
-                plt.savefig("{}{}_{}.png".format(path_to_save_png,name,count),pad_inches=0)
-                count+=1
-                if count > time_step:
-                    break
+            if features_step.shape[1] != frame_width:
+                diff = frame_width - features_step.shape[1]
+                features_step = np.concatenate((features_step,np.zeros((num_feature_columns,diff))),axis=1)
+            
+            plt.clf()
+            librosa.display.specshow(librosa.power_to_db(features_step,ref=np.max))
+            
+            plt.tight_layout(pad=0)
+            plt.savefig("{}{}_{}.png".format(path_to_save_png,name,count),pad_inches=0)
+            count+=1
+                #if count > time_step:
+                    #break
     else:
 
         plt.clf()
@@ -181,10 +196,9 @@ def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,n
         if features.shape[1] < max_len:
             diff = max_len - features.shape[1]
             features = np.concatenate((features,np.zeros((num_feature_columns,diff))),axis=1)
-        librosa.display.specshow(features[:,:max_len])
+        librosa.display.specshow(librosa.power_to_db(features[:,:max_len],ref=np.max))
         plt.tight_layout(pad=0)
         plt.savefig("{}{}.png".format(path_to_save_png,name))
-        
         
     return True
 
@@ -281,6 +295,19 @@ def get_mel_spectrogram(y,sr,num_mels = None,window_size=None, window_shift=None
     
     return fbank
 
+def get_stft(y,sr,window_size=None, window_shift=None):
+    if window_size is None:
+        n_fft = int(0.025*sr)
+    else:
+        n_fft = int(window_size*0.001*sr)
+    if window_shift is None:
+        hop_length = int(0.010*sr)
+    else:
+        hop_length = int(window_shift*0.001*sr)
+    stft = np.abs(librosa.feature.stft(y,sr,n_fft=n_fft,hop_length=hop_length)) #comes in complex numbers.. have to take absolute value
+    stft = np.transpose(stft)
+    
+    return stft
 
 def get_domfreq(y,sr):
     frequencies, magnitudes = get_freq_mag(y,sr)
@@ -487,4 +514,13 @@ def save_class_labels(class_labels,class_labels_encoded,session):
     
     return None
 
-
+def get_class_distribution(class_labels,labels_list): 
+    dict_class_distribution = {}
+    for label in class_labels:
+        count = 0
+        for label_item in labels_list:
+            if label == label_item:
+                count+=1
+            dict_class_distribution[label] = count
+    return dict_class_distribution
+        

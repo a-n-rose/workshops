@@ -1,4 +1,4 @@
-from sql_functions import create_table, insert_data, select_data
+#from sql_functions import create_table, insert_data, select_data
 from errors import ExitApp
 
 def add_noise():
@@ -79,6 +79,8 @@ def set_variables():
         features_included.append("mfcc")
     elif "fbank" or "mel filter bank" in feature_type.lower():
         features_included.append("fbank")
+    elif "stft" or "dft" in feature_type.lower():
+        features_included.append("stft")
     if "delta" in feature_type.lower():
         features_included.append("delta")
         #add delta and delta-delta values
