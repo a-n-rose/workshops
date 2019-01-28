@@ -51,20 +51,24 @@ def main(script_purpose,database=None,tablename=None):
     try:
     
         start_logging(script_purpose)
-        logging.info("Running script: {}".format(current_filename))
-        logging.info("Session: {}".format(session_name))
+        separator = "*"*80
+        logging.info(separator)
+        logging.info("RUNNING SCRIPT: \n\n{}".format(current_filename))
+        logging.info("SESSION: \n\n{}".format(session_name))
         
         ######################################################################
         
         #load data
+        logging.info("Loading data from \nDatabase: {}\nTable: {}".format(database,tablename))
         data = user_input.load_data(database,tablename)
-        
+        logging.info("Data successfully loaded")
+        end_loaded_data = time.time()
 
         #!!!!necessary variables for user to set!!!!!
         #~these set most of the subsequent variables
         id_col_index = 2 #index 0 --> sample ID, index 1 --> speaker ID
         context_window_size = 9
-        
+        frame_width = context_window_size*2+1
         
         #if the data contains column w frequency info, assume it is the second to last column
         #also assumes features start after the relevant id column
@@ -82,36 +86,45 @@ def main(script_purpose,database=None,tablename=None):
         print("The original number of features: {}".format(num_features))
         print("Total feature columns: {}".format(num_feature_columns))
     
-        frame_width = context_window_size*2+1
+        logging.info("Column index for each recording/speaker ID set at: {}".format(id_col_index))
+        logging.info("Number of original features (e.g. MFCCs or FBANK energy features): {}".format(num_features))
+        logging.info("Number of total features (e.g. derivatives, pitch): {}".format(num_feature_columns))
+        logging.info("Set context window size: {}".format(context_window_size))
+        logging.info("Frame width: {}".format(frame_width))
         
-        print("Press ENTER to continue")
-        cont = input()
-        if cont == "":
-            pass
-        else:
-            raise ExitApp()
         
+        ######################################################################
+
+        start_data_prep = time.time()
+        logging.info("Now prepping data for model training")
         #prep data
         #1) make sure each utterance has same number of samples;
         #if not, zeropad them so each has same number of samples
         data_zeropadded, samples_per_utterance, num_utterances, labels_present = featfun.prep_data(data,id_col_index,features_start_stop_index,label_col_index,num_feature_columns,frame_width,session_name)
         
+        logging.info("Data has been zero-padded")
+        logging.info("Shape of zero-padded data: {}".format(data_zeropadded.shape))
         logging.info("Fixed number of samples per utterance: {}".format(samples_per_utterance))
         logging.info("Number of utterances in data: {}".format(num_utterances))
         
+        logging.info("Reshaping data to fit ConvNet + LSTM models")
         X, y = featfun.shape_data_dimensions_CNN_LSTM(data_zeropadded,samples_per_utterance,frame_width)
-        
-        logging.info("Shape of feature data: {}".format(X.shape))
-        logging.info("Shape of label data: {}".format(y.shape))
+        logging.info("Done reshaping")
+        logging.info("Shape of feature data (i.e. 'X'): {}".format(X.shape))
+        logging.info("Shape of label data (i.e. 'y'): {}".format(y.shape))
         
         #separate X and y --> training and test datasets
-        
-        X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.1)
-        
+        logging.info("Separating data into train and test datasets")
+        test_size = 0.1
+        X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = test_size)
+        logging.info("Separated data. Test size = {}".format(test_size))
+        logging.info("Shape of train data: \nX = {}\ny = {}".format(X_train.shape,y_train.shape))
+        logging.info("Shape of test data: \nX = {}\ny = {}".format(X_test.shape,y_test.shape))
         ######################################################################
         
-    #train the models!
-    
+        #train the models!
+        logging.info("Now initializing the model and beginning training")
+        start_train = time.time()
         #TIME-FREQUENCY CONVNET
         tfcnn = Sequential()
         # feature maps = 40
@@ -134,12 +147,24 @@ def main(script_purpose,database=None,tablename=None):
         
         print(tfcnn_lstm.summary())
         
+        #set loss:
+        #binary = "binary_crossentropy", multiple (one-hot-encoded) = "categorical_crossentropy"; multiple (integer encoded) = "sparse_categorical_crossentropy" 
+        loss = "sparse_categorical_crossentropy"
+        logging.info("Loss set at: '{}'".format(loss))
         
         #compile model
-        tfcnn_lstm.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy']) # binary = "binary_crossentropy", multiple (one-hot-encoded) = "categorical_crossentropy"; multiple (integer encoded) = "sparse_categorical_crossentropy" 
+        tfcnn_lstm.compile(optimizer='adam',loss=loss,metrics=['accuracy'])
         #train model
-        epochs = 5
-        tfcnn_lstm.fit(X_train, y_train, epochs=epochs, validation_split = 0.15)
+        epochs = 300
+        logging.info("Number of epochs set at: {}".format(epochs))
+        
+        model_train_name = "CNN_LSTM_training_{}".format(session_name)
+        callback = [EarlyStopping(monitor='val_loss', patience=15, verbose=1), 
+                    ReduceLROnPlateau(patience=5, verbose=1),
+                    CSVLogger(filename='model_log/{}_log.csv'.format(model_train_name)),
+                    ModelCheckpoint(filepath='bestmodel/bestmodel_{}.h5'.format(model_train_name), verbose=1, save_best_only=True)]
+        
+        history = tfcnn_lstm.fit(X_train, y_train, epochs=epochs, validation_split = 0.15, callbacks = callback)
         
         
         score = tfcnn_lstm.evaluate(X_test,y_test,verbose=1)
@@ -156,6 +181,22 @@ def main(script_purpose,database=None,tablename=None):
         print('Done!')
         print("\n\nModel saved as:\n{}".format(modelname))
         
+        print("Now saving history and plots")
+        
+        plt.plot(history.history['loss'])
+        plt.plot(history.history['val_loss'])
+        plt.title("train vs validation loss")
+        plt.ylabel("loss")
+        plt.xlabel("epoch")
+        plt.legend(["train","validation"], loc="upper right")
+        plt.savefig("{}_LOSS.png".format(modelname))
+        
+        plt.clf()
+        plt.plot(history.history['acc'])
+        plt.plot(history.history['val_acc'])
+        plt.title("train vs validation accuracy")
+        plt.legend(["train","validation"], loc="upper right")
+        plt.savefig("{}_ACCURACY.png".format(modelname))        
 
     except ExitApp:
         print("Have a good day!")
@@ -166,10 +207,21 @@ def main(script_purpose,database=None,tablename=None):
         logging.exception("Error occurred: {}".format(e))
     finally:
         end = time.time()
-        duration = round((end-start)/3600,3)
-        msg = "Duration: {} hours".format(duration)
-        logging.info(msg)
-        print(msg)
+        duration = round((end-start)/3600,2)
+        msg1 = "Total Duration: {} hours".format(duration)
+        logging.info(msg1)
+        
+        duration_load_data = round((end_loaded_data - start)/60,2)
+        msg2 = "Duration to load data: {} min".format(duration_load_data)
+        logging.info(msg2)
+        
+        duration_prep = round((start_train - start_data_prep)/60,2)
+        msg3 = "Duration to prep data: {} min".format(duration_prep)
+        logging.info(msg3)
+        
+        duration_train = round((end-start_train)/60,2)
+        msg4 = "Duration to train models: {} min".format(duration_train)
+        logging.info(msg4)
 
 
 if __name__=="__main__":
