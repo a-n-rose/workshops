@@ -141,6 +141,11 @@ def main(script_purpose,split=False):
         for label in class_labels:
             
             for i, directory in enumerate(train_val_test_dirs):
+                if i == 0:
+                    train = True
+                else:
+                    train = False
+                    
                 try:
                     os.makedirs(directory)
                 except OSError as e:
@@ -159,13 +164,13 @@ def main(script_purpose,split=False):
                         raise
 
 
-                limit = int(max_nums_train_val_test[i]*.3)
-                #limit=None
+                #limit = int(max_nums_train_val_test[i]*.3)
+                limit=None
                 num_pics = max_nums_train_val_test[i]
                 msg = "\nExtracting features from {} samples. \nImages will be saved in the directory {}".format(num_pics,new_path)
                 print(msg)
                 logging.info(msg)
-                frame_width = 19
+                frame_width = 11
                 time_step = 6
                 logging.info("extracting features from wavefiles. Limit = {}".format(limit))
                 paths_list_dataset = []
@@ -182,9 +187,9 @@ def main(script_purpose,split=False):
                 for j, wav in enumerate(paths_list_dataset):
                     if limit:
                         if j <= limit:
-                            featfun.save_chroma(wav,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,dict_new_paths[labels_list_dataset[j]],noise_path,vad_noise=True)
+                            featfun.save_chroma(wav,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,dict_new_paths[labels_list_dataset[j]],train,noise_path,vad = True,add_noise=True)
                     else:
-                        featfun.save_chroma(wav,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,dict_new_paths[labels_list_dataset[j]],noise_path,vad_noise=True)
+                        featfun.save_chroma(wav,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,dict_new_paths[labels_list_dataset[j]],train,noise_path,vad = True,add_noise=True)
         
 
         end_feature_extraction = time.time()
