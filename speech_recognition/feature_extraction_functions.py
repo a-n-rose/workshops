@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 #math/data prep
 import numpy as np
 import pandas as pd
+import random
 import math
 import statistics
 from scipy import stats
@@ -19,6 +20,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from errors import FeatureExtractionError, TotalSamplesNotAlignedSpeakerSamples
 #from monster_functions import fill_matrix_samples_zero_padded
+import prep_noise as prep_data_vad_noise
 
 
 def collect_labels(data_path):
@@ -133,10 +135,33 @@ def remove_silences(y):
     yt = librosa.effects.trim(y)
     return yt[0]
 
-def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png):
+def get_vad_noise(y,sr,wavefile):
+    y = prep_data_vad_noise.get_speech_samples(y,sr)
+    #randomly assigns speaker data to 1 (train) 2 (validation) or 3 (test)
+    #at random apply varying amounts of environment noise
+    rand_scale = random.choice([0.0,0.25,0.5,0.75])
+    if rand_scale > 0.0:
+        #apply *known* environemt noise to signal
+        total_length = len(y)/sr
+        y_noise,sr = librosa.load(wavefile,sr=16000)
+        envnoise_normalized = prep_data_vad_noise.normalize(y_noise)
+        envnoise_scaled = prep_data_vad_noise.scale_noise(envnoise_normalized,rand_scale)
+        envnoise_matched = prep_data_vad_noise.match_length(envnoise_scaled,sr,total_length)
+        if len(envnoise_matched) != len(y):
+            diff = int(len(y) - len(envnoise_matched))
+            if diff < 0:
+                envnoise_matched = envnoise_matched[:diff]
+            else:
+                envnoise_matched = np.append(envnoise_matched,np.zeros(diff,))
+        y += envnoise_matched
+    return y
+
+def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png,noise_wavefile=None,vad_noise=None):
 
     y, sr = get_samps(wavefile)
-    y = remove_silences(y)
+    #y = remove_silences(y)
+    if vad_noise:
+        y = get_vad_noise(y,sr,noise_wavefile)
     extracted = []
     if "mfcc" in feature_type.lower():
         extracted.append("mfcc")
@@ -182,7 +207,7 @@ def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,n
                 features_step = np.concatenate((features_step,np.zeros((num_feature_columns,diff))),axis=1)
             
             plt.clf()
-            librosa.display.specshow(librosa.power_to_db(features_step,ref=np.max))
+            librosa.display.specshow(features_step)
             
             plt.tight_layout(pad=0)
             plt.savefig("{}{}_{}.png".format(path_to_save_png,name,count),pad_inches=0)
@@ -196,7 +221,7 @@ def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,n
         if features.shape[1] < max_len:
             diff = max_len - features.shape[1]
             features = np.concatenate((features,np.zeros((num_feature_columns,diff))),axis=1)
-        librosa.display.specshow(librosa.power_to_db(features[:,:max_len],ref=np.max))
+        librosa.display.specshow(features[:,:max_len])
         plt.tight_layout(pad=0)
         plt.savefig("{}{}.png".format(path_to_save_png,name))
         
