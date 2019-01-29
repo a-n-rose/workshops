@@ -28,6 +28,7 @@ def collect_labels(data_path):
     labels = list(p.glob('*/'))
     labels = [PurePath(labels[i]) for i in range(len(labels))]
     labels = [x.parts[1] for x in labels if '_' not in x.parts[1]]
+    labels = check_4_github_files(labels)
     return labels
 
 def get_num_images(data_directory,image_format=None):
@@ -54,10 +55,10 @@ def collect_audio_and_labels(data_path):
     '''
     p = Path(data_path)
     waves = list(p.glob('**/*.wav'))
-    #remove words repeated by same speaker from collection
-    x = [PurePath(waves[i]) for i in range(len(waves))]
-    y = [j.parts for j in x]
-    return x, y
+    #remove directories with "_" at the beginning
+    paths = [PurePath(waves[i]) for i in range(len(waves)) if waves[i].parts[1][0]!="_"]
+    labels = [j.parts[1] for j in paths ]
+    return paths, labels
     
 
 def get_speaker_id(path_label):
@@ -135,9 +136,7 @@ def remove_silences(y):
     yt = librosa.effects.trim(y)
     return yt[0]
 
-def get_vad_noise(y,sr,wavefile):
-    y = prep_data_vad_noise.get_speech_samples(y,sr)
-    #randomly assigns speaker data to 1 (train) 2 (validation) or 3 (test)
+def apply_noise(y,sr,wavefile):
     #at random apply varying amounts of environment noise
     rand_scale = random.choice([0.0,0.25,0.5,0.75])
     if rand_scale > 0.0:
@@ -156,12 +155,14 @@ def get_vad_noise(y,sr,wavefile):
         y += envnoise_matched
     return y
 
-def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png,noise_wavefile=None,vad_noise=None):
+def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,num_feature_columns,noise,path_to_save_png,train=False,noise_wavefile=None,vad = False):
 
     y, sr = get_samps(wavefile)
     #y = remove_silences(y)
-    if vad_noise:
-        y = get_vad_noise(y,sr,noise_wavefile)
+    if vad:
+        y = prep_data_vad_noise.get_speech_samples(y,sr)
+    if noise_wavefile:
+        y = apply_noise(y,sr,noise_wavefile)
     extracted = []
     if "mfcc" in feature_type.lower():
         extracted.append("mfcc")
@@ -226,6 +227,44 @@ def save_chroma(wavefile,split,frame_width,time_step,feature_type,num_features,n
         plt.savefig("{}{}.png".format(path_to_save_png,name))
         
     return True
+
+def get_feats(wavefile,feature_type,num_features,delta=False,noise_wavefile = None,vad = False):
+    y, sr = get_samps(wavefile)
+    if vad:
+        y = prep_data_vad_noise.get_speech_samples(y,sr)
+    if noise_wavefile:
+        y = apply_noise(y,sr,noise_wavefile)
+    if delta:
+        num_feature_columns = num_features*3
+    else:
+        num_feature_columns = num_features
+        
+    extracted = []
+    if "mfcc" in feature_type.lower():
+        extracted.append("mfcc")
+        features = get_mfcc(y,sr,num_mfcc=num_features)
+        features -= (np.mean(features, axis=0) + 1e-8)
+        if "delta" in feature_type.lower():
+            delta, delta_delta = get_change_acceleration_rate(features)
+            features = np.concatenate((features,delta,delta_delta),axis=1)
+    elif "fbank" in feature_type.lower():
+        extracted.append("fbank")
+        features = get_mel_spectrogram(y,sr,num_mels = num_features)
+        features -= (np.mean(features, axis=0) + 1e-8)
+        if "delta" in feature_type.lower():
+            delta, delta_delta = get_change_acceleration_rate(features)
+            features = np.concatenate((features,delta,delta_delta),axis=1)
+    elif "stft" in feature_type.lower():
+        extracted.append("stft")
+        features = get_stft(y,sr)
+        features -= (np.mean(features, axis=0) + 1e-8)
+        if "delta" in feature_type.lower():
+            delta, delta_delta = get_change_acceleration_rate(features)
+            features = np.concatenate((features,delta,delta_delta),axis=1)
+    if features.shape[1] != num_feature_columns: 
+        raise FeatureExtractionError("The file '{}' results in the incorrect  number of columns (should be {} columns): shape {}".format(wavefile,num_features,features.shape))
+    return features
+    
 
 def get_features(wavefile,feature_type,num_features,num_feature_columns,noise):
     if noise:
@@ -549,3 +588,115 @@ def get_class_distribution(class_labels,labels_list):
             dict_class_distribution[label] = count
     return dict_class_distribution
         
+
+def get_min_samples_per_class(class_labels, labels_list):
+    dict_class_distribution = get_class_distribution(class_labels,labels_list)
+    min_val = (1000000, None)
+    for key, value in dict_class_distribution.items():
+        if value < min_val[0]:
+            min_val = (value, key)
+    return min_val
+
+
+def get_max_nums_train_val_test(max_num_per_class):
+    max_train = int(max_num_per_class*.8)
+    max_val = int(max_num_per_class*.1)
+    max_test = int(max_num_per_class*.1)
+    sum_max_nums = max_train + max_val + max_test
+    if max_num_per_class > sum_max_nums:
+        diff = max_num_per_class - sum_max_nums
+        max_train += diff
+    return max_train, max_val, max_test
+
+def get_train_val_test_indices(list_length):
+    indices_ran = list(range(list_length))
+    random.shuffle(indices_ran)
+    train_len = int(list_length*.8)
+    val_len = int(list_length*.1)
+    test_len = int(list_length*.1)
+    sum_indices = train_len + val_len + test_len
+    if sum_indices != list_length:
+        diff = list_length - sum_indices
+        train_len += diff
+    train_indices = []
+    val_indices = []
+    test_indices = []
+    for i, item in enumerate(indices_ran):
+        if i < train_len:
+            train_indices.append(item)
+        elif i >= train_len and i < train_len+val_len:
+            val_indices.append(item)
+        elif i >= train_len + val_len and i < list_length:
+            test_indices.append(item)
+    return train_indices, val_indices, test_indices
+
+
+def make_dict_class_index(class_labels,labels_list):
+    dict_class_index_list = {}
+    for label in class_labels:
+        dict_class_index_list[label] = []
+        for i, label_item in enumerate(labels_list):
+            if label == label_item:
+                dict_class_index_list[label].append(i)
+    return dict_class_index_list
+
+
+def assign_indices_train_val_test(class_labels,dict_class_index,max_nums_train_val_test):
+    dict_class_dataset_index_list = {}
+    for label in class_labels:
+        tot_indices = dict_class_index[label]
+        tot_indices_copy = tot_indices.copy()
+        random.shuffle(tot_indices_copy)
+        train_indices = tot_indices_copy[:max_nums_train_val_test[0]]
+        val_indices = tot_indices_copy[max_nums_train_val_test[0]:max_nums_train_val_test[0]+max_nums_train_val_test[1]]
+        test_indices = tot_indices_copy[max_nums_train_val_test[0]+max_nums_train_val_test[1]:max_nums_train_val_test[0]+max_nums_train_val_test[1]+max_nums_train_val_test[2]]
+        dict_class_dataset_index_list[label] = [train_indices,val_indices,test_indices]
+    return dict_class_dataset_index_list
+
+
+def get_feats4pickle(class_labels,dict_labels_encoded,data_filename4saving,max_num_samples,dict_class_dataset_index_list,paths_list,labels_list,feature_type,num_filters,time_step,frame_width,limit=None,delta=False,noise_wavefile=None,vad=False,dataset_index=0):
+    msg = "\nExtracting features from {} samples. \nFeatures will be saved in the file {}".format(max_num_samples,data_filename4saving)
+    print(msg)
+
+    
+    for label in class_labels:
+        paths_list_dataset = []
+        labels_list_dataset = []
+        train_val_test_index_list = dict_class_dataset_index_list[label]
+        #print(train_val_test_index_list[dataset_index])
+        for k in train_val_test_index_list[dataset_index]:
+            paths_list_dataset.append(paths_list[k])
+            labels_list_dataset.append(labels_list[k])
+
+            
+        print("Extracting features from class: {}".format(label))
+    
+    #train_feats = Parallel(n_jobs=num_cores)(
+        #delayed(all_feats)('./data/audio_train_trim/' + x + '.npy')
+        #for x in tqdm(train.fname.values))
+
+    #train_feats_df = pd.DataFrame(np.vstack(train_feats))
+
+
+        for j, wav in enumerate(paths_list_dataset):
+            if limit and j > limit:
+                break
+            else:
+                feats = coll_feats_manage_timestep(time_step,frame_width,wav,feature_type,num_filters,delta=False, noise_wavefile=noise_wavefile,vad = True)
+                np.save(data_filename4saving+"_"+label+"_.npy",feats)
+    
+    return True
+    
+def coll_feats_manage_timestep(time_step,frame_width,wav,feature_type,num_filters,delta=False,noise_wavefile=None,vad = True):
+    feats = get_feats(wav,feature_type,num_filters,delta=False,noise_wavefile=noise_wavefile,vad = True)
+    max_len = frame_width*time_step
+    print(feats.shape)
+    if feats.shape[0] < max_len:
+        diff = max_len - feats.shape[0]
+        feats = np.concatenate((feats,np.zeros((diff,feats.shape[1]))),axis=0)
+    else:
+        feats = feats[:max_len,:]
+    print(feats.shape)
+    return feats
+        
+    
