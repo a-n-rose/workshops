@@ -33,8 +33,11 @@ from my_logger import start_logging, get_date
 logger = logging.getLogger(__name__)
 
 
+
+current_filename = os.path.basename(__file__)
+session_name = get_date() #make sure this session has a unique identifier - link to model name and logging information
 #set variables
-modelname = "CNN_LSTM_speech_commands"
+modelname = "CNN_LSTM_speech_commands_{}".format(session_name)
 script_purpose = "speech_commands_CNN_LSTM_ImageDataGenerator"
 batch_size = 1 #number of 19-framed segments of 120 features (and 3rgb values)
 split = False #if True, data won't get shuffled
@@ -64,7 +67,7 @@ if split:
 else:
     frame_width_total = frame_width * timestep
     shuffle_data = False #think it only shuffles inside the picture?
-    data_png = "data_test_nosplit"
+    data_png = "data_normed_3words_short"
 if color_scale == 1:
     color_str = "grayscale"
 elif color_scale == 3:
@@ -72,8 +75,7 @@ elif color_scale == 3:
 
 
 
-current_filename = os.path.basename(__file__)
-session_name = get_date() #make sure this session has a unique identifier - link to model name and logging information
+
 start = time.time()
 start_logging(script_purpose)
 separator = "*"*80
