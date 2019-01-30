@@ -17,7 +17,7 @@ sampling_rate = 16000
 window = 25
 shift = 10
 timesteps = 5
-context_window = 9
+context_window = 5
 frame_width = context_window*2 + 1
 
 
@@ -49,10 +49,19 @@ max_nums_train_val_test = featfun.get_max_nums_train_val_test(max_num_per_class)
 #randomly assign indices to train, val, test datasets:
 dict_class_dataset_index_list = featfun.assign_indices_train_val_test(labels_class,dict_class_index_list,max_nums_train_val_test)
 
-filename_save_data = "data_{0}_{1}_delta{2}_noise{3}_sr{4}_window{5}_shift{6}_timestep{7}_framewidth{8}".format(feature_type,num_filters,delta,noise,sampling_rate,window,shift,timesteps,frame_width)
+filename_save_data = "{0}_{1}_delta{2}_noise{3}_sr{4}_window{5}_shift{6}_timestep{7}_framewidth{8}".format(feature_type,num_filters,delta,noise,sampling_rate,window,shift,timesteps,frame_width)
 train_val_test_filenames = []
+
+
 for i in ["train","val","test"]:
-    train_val_test_filenames.append("{}_".format(i)+filename_save_data)
+    new_path = "./data_{}{}_{}/".format(feature_type,num_filters,i)
+    train_val_test_filenames.append(dirname+filename_save_data)
+    try:
+        os.makedirs(new_path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
 
 start_feature_extraction = time.time()
 
